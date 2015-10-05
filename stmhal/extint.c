@@ -112,8 +112,15 @@ STATIC const uint8_t nvic_irq_channel[EXTI_NUM_VECTORS] = {
     EXTI0_IRQn,     EXTI1_IRQn,     EXTI2_IRQn,     EXTI3_IRQn,     EXTI4_IRQn,
     EXTI9_5_IRQn,   EXTI9_5_IRQn,   EXTI9_5_IRQn,   EXTI9_5_IRQn,   EXTI9_5_IRQn,
     EXTI15_10_IRQn, EXTI15_10_IRQn, EXTI15_10_IRQn, EXTI15_10_IRQn, EXTI15_10_IRQn,
-    EXTI15_10_IRQn, PVD_IRQn,       RTC_Alarm_IRQn, OTG_FS_WKUP_IRQn, ETH_WKUP_IRQn,
+    EXTI15_10_IRQn,
+// internal sources 16-22 are MCU dependant
+#if defined(MCU_SERIES_L1)
+    PVD_IRQn,       RTC_Alarm_IRQn, OTG_FS_WKUP_IRQn, TAMPER_STAMP_IRQn,
+    RTC_WKUP_IRQn, COMP_IRQn, COMP_IRQn, COMP_ACQ_IRQn
+#else
+    PVD_IRQn,       RTC_Alarm_IRQn, OTG_FS_WKUP_IRQn, ETH_WKUP_IRQn,
     OTG_HS_WKUP_IRQn, TAMP_STAMP_IRQn, RTC_WKUP_IRQn
+#endif
 };
 
 // Set override_callback_obj to true if you want to unconditionally set the

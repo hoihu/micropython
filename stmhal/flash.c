@@ -87,6 +87,16 @@ static const uint32_t flash_info_table[26] = {
 };
 
 uint32_t flash_get_sector_info(uint32_t addr, uint32_t *start_addr, uint32_t *size) {
+#if defined(MCU_SERIES_L1)
+    // L1 are organized in 256Bytes pages, so a lookup table makes no sense
+    // check address range manually and return the page number - not sector number
+    if ((addr > 0x80000000) && (addr < 0x8040000)) {
+        *size = 0x100;
+        *start_addr = addr & 0xffffff00;
+        return (addr & 0x3ff00) >> 8;
+    }
+    return 0;
+#else
     if (addr >= flash_info_table[0]) {
         for (int i = 0; i < 24; i += 2) {
             if (addr < flash_info_table[i + 2]) {
@@ -101,6 +111,7 @@ uint32_t flash_get_sector_info(uint32_t addr, uint32_t *start_addr, uint32_t *si
         }
     }
     return 0;
+#endif
 }
 
 void flash_erase(uint32_t flash_dest, const uint32_t *src, uint32_t num_word32) {
@@ -115,13 +126,19 @@ void flash_erase(uint32_t flash_dest, const uint32_t *src, uint32_t num_word32) 
     // Clear pending flags (if any)
     __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_EOP | FLASH_FLAG_OPERR | FLASH_FLAG_WRPERR |
                            FLASH_FLAG_PGAERR | FLASH_FLAG_PGPERR | FLASH_FLAG_PGSERR);
-
     // erase the sector(s)
     FLASH_EraseInitTypeDef EraseInitStruct;
+
+#if defined(MCU_SERIES_L1)
+    EraseInitStruct.TypeErase = TYPEERASE_PAGES;
+    EraseInitStruct.PageAddress = flash_get_sector_info(flash_dest, NULL, NULL);
+    EraseInitStruct.NbPages = flash_get_sector_info(flash_dest + 4 * num_word32 - 1, NULL, NULL) - EraseInitStruct.Sector + 1;
+#else
     EraseInitStruct.TypeErase = TYPEERASE_SECTORS;
     EraseInitStruct.VoltageRange = VOLTAGE_RANGE_3; // voltage range needs to be 2.7V to 3.6V
     EraseInitStruct.Sector = flash_get_sector_info(flash_dest, NULL, NULL);
     EraseInitStruct.NbSectors = flash_get_sector_info(flash_dest + 4 * num_word32 - 1, NULL, NULL) - EraseInitStruct.Sector + 1;
+#endif
     uint32_t SectorError = 0;
     if (HAL_FLASHEx_Erase(&EraseInitStruct, &SectorError) != HAL_OK) {
         // error occurred during sector erase
