@@ -74,7 +74,7 @@ STATIC NORETURN mp_obj_t pyb_bootloader(void) {
     HAL_RCC_DeInit();
     HAL_DeInit();
 
-#if defined(MCU_SERIES_F7) or defined(MCU_SERIES_L1) 
+#if defined(MCU_SERIES_F7) || defined(MCU_SERIES_L1) 
     // arm-none-eabi-gcc 4.9.0 does not correctly inline this
     // MSP function, so we write it out explicitly here.
     //__set_MSP(*((uint32_t*) 0x1FF00000));
