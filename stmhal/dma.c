@@ -31,8 +31,26 @@
 
 #include "dma.h"
 
+#if defined(MCU_SERIES_L1)
+#define NSTREAM (12)
+#define ID_OFFSET_DMA2 (8)
+static const uint8_t dma_irqn[NSTREAM] = {
+    DMA1_Channel1_IRQn,
+    DMA1_Channel2_IRQn,
+    DMA1_Channel3_IRQn,
+    DMA1_Channel4_IRQn,
+    DMA1_Channel5_IRQn,
+    DMA1_Channel6_IRQn,
+    DMA1_Channel7_IRQn,
+    DMA2_Channel1_IRQn,
+    DMA2_Channel2_IRQn,
+    DMA2_Channel3_IRQn,
+    DMA2_Channel4_IRQn,
+    DMA2_Channel5_IRQn,
+};
+#else
 #define NSTREAM (16)
-
+#define ID_OFFSET_DMA2 (8)
 static const uint8_t dma_irqn[NSTREAM] = {
     DMA1_Stream0_IRQn,
     DMA1_Stream1_IRQn,
@@ -51,27 +69,45 @@ static const uint8_t dma_irqn[NSTREAM] = {
     DMA2_Stream6_IRQn,
     DMA2_Stream7_IRQn,
 };
-
+#endif
 // Default parameters to dma_init() shared by spi and i2c; Channel and Direction
 // vary depending on the peripheral instance so they get passed separately
 const DMA_InitTypeDef dma_init_struct_spi_i2c = {
+    #if !defined(MCU_SERIES_L1)
     .Channel             = 0,
     .Direction           = 0,
+    #endif
     .PeriphInc           = DMA_PINC_DISABLE,
     .MemInc              = DMA_MINC_ENABLE,
     .PeriphDataAlignment = DMA_PDATAALIGN_BYTE,
     .MemDataAlignment    = DMA_MDATAALIGN_BYTE,
     .Mode                = DMA_NORMAL,
     .Priority            = DMA_PRIORITY_LOW,
+    #if !defined(MCU_SERIES_L1)
     .FIFOMode            = DMA_FIFOMODE_DISABLE,
     .FIFOThreshold       = DMA_FIFO_THRESHOLD_FULL,
     .MemBurst            = DMA_MBURST_INC4,
     .PeriphBurst         = DMA_PBURST_INC4
+    #endif
 };
 
 static DMA_HandleTypeDef *dma_handle[NSTREAM] = {NULL};
 static uint32_t dma_last_channel[NSTREAM];
 
+#if defined(MCU_SERIES_L1)
+void DMA1_Channel1_IRQHandler(void) { if (dma_handle[0] != NULL) { HAL_DMA_IRQHandler(dma_handle[0]); } }
+void DMA1_Channel2_IRQHandler(void) { if (dma_handle[1] != NULL) { HAL_DMA_IRQHandler(dma_handle[0]); } }
+void DMA1_Channel3_IRQHandler(void) { if (dma_handle[2] != NULL) { HAL_DMA_IRQHandler(dma_handle[0]); } }
+void DMA1_Channel4_IRQHandler(void) { if (dma_handle[3] != NULL) { HAL_DMA_IRQHandler(dma_handle[0]); } }
+void DMA1_Channel5_IRQHandler(void) { if (dma_handle[4] != NULL) { HAL_DMA_IRQHandler(dma_handle[0]); } }
+void DMA1_Channel6_IRQHandler(void) { if (dma_handle[5] != NULL) { HAL_DMA_IRQHandler(dma_handle[0]); } }
+void DMA1_Channel7_IRQHandler(void) { if (dma_handle[6] != NULL) { HAL_DMA_IRQHandler(dma_handle[0]); } }
+void DMA2_Channel1_IRQHandler(void) { if (dma_handle[7] != NULL) { HAL_DMA_IRQHandler(dma_handle[0]); } }
+void DMA2_Channel2_IRQHandler(void) { if (dma_handle[8] != NULL) { HAL_DMA_IRQHandler(dma_handle[0]); } }
+void DMA2_Channel3_IRQHandler(void) { if (dma_handle[9] != NULL) { HAL_DMA_IRQHandler(dma_handle[0]); } }
+void DMA2_Channel4_IRQHandler(void) { if (dma_handle[10] != NULL) { HAL_DMA_IRQHandler(dma_handle[0]); } }
+void DMA2_Channel5_IRQHandler(void) { if (dma_handle[11] != NULL) { HAL_DMA_IRQHandler(dma_handle[0]); } }
+#else
 void DMA1_Stream0_IRQHandler(void) { if (dma_handle[0] != NULL) { HAL_DMA_IRQHandler(dma_handle[0]); } }
 void DMA1_Stream1_IRQHandler(void) { if (dma_handle[1] != NULL) { HAL_DMA_IRQHandler(dma_handle[1]); } }
 void DMA1_Stream2_IRQHandler(void) { if (dma_handle[2] != NULL) { HAL_DMA_IRQHandler(dma_handle[2]); } }
@@ -88,15 +124,75 @@ void DMA2_Stream4_IRQHandler(void) { if (dma_handle[12] != NULL) { HAL_DMA_IRQHa
 void DMA2_Stream5_IRQHandler(void) { if (dma_handle[13] != NULL) { HAL_DMA_IRQHandler(dma_handle[13]); } }
 void DMA2_Stream6_IRQHandler(void) { if (dma_handle[14] != NULL) { HAL_DMA_IRQHandler(dma_handle[14]); } }
 void DMA2_Stream7_IRQHandler(void) { if (dma_handle[15] != NULL) { HAL_DMA_IRQHandler(dma_handle[15]); } }
+#endif
 
-static int get_dma_id(DMA_Stream_TypeDef *dma_stream) {
-    if ((uint32_t)dma_stream < DMA2_BASE) {
-        return ((uint32_t)dma_stream - DMA1_Stream0_BASE) / 0x18;
+
+#if defined(MCU_SERIES_L1)
+static int get_dma_id(DMA_Channel_TypeDef *dma_channel) {
+    if ((uint32_t)dma_channel < DMA2_BASE) {
+        return ((uint32_t)dma_channel - DMA1_Channel1_BASE) / sizeof(DMA_Channel_TypeDef);
     } else {
-        return (NSTREAM / 2) + ((uint32_t)dma_stream - DMA2_Stream0_BASE) / 0x18;
+        // XXX better to calculate the offset (border between dma1/2 than hard-code it...
+        return (ID_OFFSET_DMA2) + ((uint32_t)dma_channel- DMA2_Channel1_BASE) / sizeof(DMA_Channel_TypeDef);
+    }
+}
+void dma_init(DMA_HandleTypeDef *dma, DMA_Channel_TypeDef *dma_stream, const DMA_InitTypeDef *dma_init, uint32_t dma_channel, uint32_t direction, void *data) {
+    int dma_id = get_dma_id(dma_stream);
+    //printf("dma_init(%p, %p(%d), 0x%x, 0x%x, %p)\n", dma, dma_stream, dma_id, (uint)dma_channel, (uint)direction, data);
+
+    // TODO possibly don't need to clear the entire structure
+    memset(dma, 0, sizeof(*dma));
+
+    // set global pointer for IRQ handler
+    dma_handle[dma_id] = dma;
+
+    // initialise parameters
+    dma->Instance = dma_stream;
+    dma->Init = *dma_init;
+
+    // half of __HAL_LINKDMA(data, xxx, *dma)
+    // caller must implement other half by doing: data->xxx = dma
+    dma->Parent = data;
+
+    // if this stream was previously configured for this channel then we
+    // can skip most of the initialisation
+    if (dma_last_channel[dma_id] == dma_channel) {
+        goto same_channel;
+    }
+    dma_last_channel[dma_id] = dma_channel;
+
+    // enable clock for needed DMA peripheral
+    if (dma_id < ID_OFFSET_DMA2) {
+        __DMA1_CLK_ENABLE();
+    } else {
+        __DMA2_CLK_ENABLE();
+    }
+
+    // reset and configure DMA peripheral
+    HAL_DMA_DeInit(dma);
+    HAL_DMA_Init(dma);
+    HAL_NVIC_SetPriority(dma_irqn[dma_id], 6, 0);
+
+same_channel:
+    HAL_NVIC_EnableIRQ(dma_irqn[dma_id]);
+}
+
+void dma_invalidate_channel(DMA_Channel_TypeDef *dma_stream, uint32_t dma_channel) {
+    int dma_id = get_dma_id(dma_stream);
+    if (dma_last_channel[dma_id] == dma_channel) {
+        dma_last_channel[dma_id] = 0xffffffff;
     }
 }
 
+#else
+static int get_dma_id(DMA_Stream_TypeDef *dma_stream) {
+    if ((uint32_t)dma_stream < DMA2_BASE) {
+        return ((uint32_t)dma_stream - DMA1_Stream0_BASE) / sizeof(DMA_Stream_TypeDef);
+    } else {
+        // note: NSTREAM/2 is only valid if both DMA instances have same amount of channels/streams..
+        return (ID_OFFSET_DMA2) + ((uint32_t)dma_stream - DMA2_Stream0_BASE) / sizeof(DMA_Stream_TypeDef);
+    }
+}
 void dma_init(DMA_HandleTypeDef *dma, DMA_Stream_TypeDef *dma_stream, const DMA_InitTypeDef *dma_init, uint32_t dma_channel, uint32_t direction, void *data) {
     int dma_id = get_dma_id(dma_stream);
     //printf("dma_init(%p, %p(%d), 0x%x, 0x%x, %p)\n", dma, dma_stream, dma_id, (uint)dma_channel, (uint)direction, data);
@@ -125,7 +221,7 @@ void dma_init(DMA_HandleTypeDef *dma, DMA_Stream_TypeDef *dma_stream, const DMA_
     dma_last_channel[dma_id] = dma_channel;
 
     // enable clock for needed DMA peripheral
-    if (dma_id <= 7) {
+    if (dma_id < ID_OFFSET_DMA2) {
         __DMA1_CLK_ENABLE();
     } else {
         __DMA2_CLK_ENABLE();
@@ -140,15 +236,17 @@ same_channel:
     HAL_NVIC_EnableIRQ(dma_irqn[dma_id]);
 }
 
-void dma_deinit(DMA_HandleTypeDef *dma) {
-    int dma_id = get_dma_id(dma->Instance);
-    HAL_NVIC_DisableIRQ(dma_irqn[dma_id]);
-    dma_handle[dma_id] = NULL;
-}
-
 void dma_invalidate_channel(DMA_Stream_TypeDef *dma_stream, uint32_t dma_channel) {
     int dma_id = get_dma_id(dma_stream);
     if (dma_last_channel[dma_id] == dma_channel) {
         dma_last_channel[dma_id] = 0xffffffff;
     }
+}
+#endif
+
+
+void dma_deinit(DMA_HandleTypeDef *dma) {
+    int dma_id = get_dma_id(dma->Instance);
+    HAL_NVIC_DisableIRQ(dma_irqn[dma_id]);
+    dma_handle[dma_id] = NULL;
 }

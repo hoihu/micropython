@@ -38,16 +38,17 @@ INC += -I$(BUILD)
 INC += -I$(CMSIS_DIR)/inc
 INC += -I$(CMSIS_DIR)/devinc
 INC += -I$(HAL_DIR)/inc
+INC += -I$(HAL_DIR)/inc/Legacy
 INC += -I$(USBDEV_DIR)/core/inc -I$(USBDEV_DIR)/class/inc
 #INC += -I$(USBHOST_DIR)
 INC += -I../lib/mp-readline
 INC += -I../lib/netutils
 INC += -I../lib/timeutils
 
-CFLAGS_CORTEX_M = -mthumb -mabi=aapcs-linux -mfpu=fpv4-sp-d16 -mfloat-abi=hard -fsingle-precision-constant -Wdouble-promotion
-CFLAGS_MCU_f4 = $(CFLAGS_CORTEX_M) -mtune=cortex-m4 -mcpu=cortex-m4 -DMCU_SERIES_F4
-CFLAGS_MCU_f7 = $(CFLAGS_CORTEX_M) -mtune=cortex-m7 -mcpu=cortex-m7 -DMCU_SERIES_F7
-CFLAGS_MCU_l1 = $(CFLAGS_CORTEX_M) -mtune=cortex-m3 -mcpu=cortex-m3 -DMCU_SERIES_L1
+CFLAGS_CORTEX_M = -mthumb -mabi=aapcs-linux -mfpu=fpv4-sp-d16 -fsingle-precision-constant -Wdouble-promotion
+CFLAGS_MCU_f4 = $(CFLAGS_CORTEX_M) -mtune=cortex-m4 -mcpu=cortex-m4 -mfloat-abi=hard -DMCU_SERIES_F4
+CFLAGS_MCU_f7 = $(CFLAGS_CORTEX_M) -mtune=cortex-m7 -mcpu=cortex-m7 -mfloat-abi=hard -DMCU_SERIES_F7
+CFLAGS_MCU_l1 = $(CFLAGS_CORTEX_M) -mtune=cortex-m3 -mcpu=cortex-m3 -mfloat-abi=soft -DMCU_SERIES_L1
 
 CFLAGS = $(INC) -Wall -Wpointer-arith -Werror -ansi -std=gnu99 -nostdlib $(CFLAGS_MOD)
 CFLAGS += -D$(CMSIS_MCU)
@@ -110,7 +111,7 @@ SRC_C = \
 	main.c \
 	system_stm32.c \
 	stm32_it.c \
-	usbd_conf.c \
+	usbd_conf_l1.c \
 	usbd_desc.c \
 	usbd_cdc_interface.c \
 	usbd_msc_storage.c \
@@ -120,12 +121,8 @@ SRC_C = \
 	systick.c  \
 	timer.c \
 	led.c \
-	pin.c \
-	pin_defs_stmhal.c \
-	pin_named_pins.c \
-	bufhelper.c \
 	dma.c \
-	i2c.c \
+	bufhelper.c \
 	spi.c \
 	uart.c \
 	can.c \
@@ -150,17 +147,12 @@ SRC_C = \
 	rng.c \
 	rtc.c \
 	flash.c \
-	storage.c \
 	file.c \
 	sdcard.c \
 	fsusermount.c \
 	diskio.c \
 	ffconf.c \
 	lcd.c \
-	accel.c \
-	servo.c \
-	dac.c \
-	adc.c \
 	$(wildcard boards/$(BOARD)/*.c)
 
 SRC_O = \
@@ -171,7 +163,6 @@ SRC_HAL = $(addprefix $(HAL_DIR)/src/stm32$(MCU_SERIES)xx_,\
 	hal.c \
 	hal_adc.c \
 	hal_adc_ex.c \
-	hal_can.c \
 	hal_cortex.c \
 	hal_dac.c \
 	hal_dac_ex.c \
@@ -186,7 +177,6 @@ SRC_HAL = $(addprefix $(HAL_DIR)/src/stm32$(MCU_SERIES)xx_,\
 	hal_pwr_ex.c \
 	hal_rcc.c \
 	hal_rcc_ex.c \
-	hal_rng.c \
 	hal_rtc.c \
 	hal_rtc_ex.c \
 	hal_sd.c \
@@ -195,7 +185,6 @@ SRC_HAL = $(addprefix $(HAL_DIR)/src/stm32$(MCU_SERIES)xx_,\
 	hal_tim_ex.c \
 	hal_uart.c \
 	ll_sdmmc.c \
-	ll_usb.c \
 	)
 
 SRC_USBDEV = $(addprefix $(USBDEV_DIR)/,\

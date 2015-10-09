@@ -510,7 +510,12 @@ STATIC mp_obj_t pyb_uart_init_helper(pyb_uart_obj_t *self, mp_uint_t n_args, con
     // compute actual baudrate that was configured
     // (this formula assumes UART_OVERSAMPLING_16)
     uint32_t actual_baudrate;
+
+    #if defined(MCU_SERIES_L1)
+    if (self->uart.Instance == USART1) {
+    #else
     if (self->uart.Instance == USART1 || self->uart.Instance == USART6) {
+    #endif
         actual_baudrate = HAL_RCC_GetPCLK2Freq();
     } else {
         actual_baudrate = HAL_RCC_GetPCLK1Freq();
@@ -655,11 +660,14 @@ STATIC mp_obj_t pyb_uart_deinit(mp_obj_t self_in) {
         __UART5_RELEASE_RESET();
         __UART5_CLK_DISABLE();
     #endif
+    #if defined(USART6)
     } else if (uart->Instance == USART6) {
         HAL_NVIC_DisableIRQ(USART6_IRQn);
         __USART6_FORCE_RESET();
         __USART6_RELEASE_RESET();
         __USART6_CLK_DISABLE();
+
+    #endif
     }
     return mp_const_none;
 }

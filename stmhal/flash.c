@@ -68,6 +68,7 @@
 
 #endif // MCU_SERIES_F7
 
+#if !defined(MCU_SERIES_L1)
 static const uint32_t flash_info_table[26] = {
     ADDR_FLASH_SECTOR_0, FLASH_SECTOR_0,
     ADDR_FLASH_SECTOR_1, FLASH_SECTOR_1,
@@ -85,7 +86,7 @@ static const uint32_t flash_info_table[26] = {
     #endif
     ADDR_FLASH_END, 0,
 };
-
+#endif
 uint32_t flash_get_sector_info(uint32_t addr, uint32_t *start_addr, uint32_t *size) {
 #if defined(MCU_SERIES_L1)
     // L1 are organized in 256Bytes pages, so a lookup table makes no sense
@@ -123,16 +124,33 @@ void flash_erase(uint32_t flash_dest, const uint32_t *src, uint32_t num_word32) 
     // unlock
     HAL_FLASH_Unlock();
 
+
+    #define FLASH_FLAG_BSY             FLASH_SR_BSY        /*!< FLASH Busy flag */
+    #define FLASH_FLAG_EOP             FLASH_SR_EOP        /*!< FLASH End of Programming flag */
+    #define FLASH_FLAG_ENDHV           FLASH_SR_ENDHV      /*!< FLASH End of High Voltage flag */
+    #define FLASH_FLAG_READY           FLASH_SR_READY      /*!< FLASH Ready flag after low power mode */
+    #define FLASH_FLAG_WRPERR          FLASH_SR_WRPERR     /*!< FLASH Write protected error flag */
+    #define FLASH_FLAG_PGAERR          FLASH_SR_PGAERR     /*!< FLASH Programming Alignment error flag */
+    #define FLASH_FLAG_SIZERR          FLASH_SR_SIZERR     /*!< FLASH Size error flag  */
+    #define FLASH_FLAG_OPTVERR         FLASH_SR_OPTVERR    /*!< FLASH Option Validity error flag  */
+
+    #if defined(MCU_SERIES_L1)
+    // Clear pending flags (if any)
+    __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_EOP | FLASH_FLAG_ENDHV | FLASH_FLAG_WRPERR |
+                           FLASH_FLAG_PGAERR | FLASH_FLAG_SIZERR | FLASH_FLAG_OPTVERR );
+
+    #else
     // Clear pending flags (if any)
     __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_EOP | FLASH_FLAG_OPERR | FLASH_FLAG_WRPERR |
                            FLASH_FLAG_PGAERR | FLASH_FLAG_PGPERR | FLASH_FLAG_PGSERR);
+    #endif
     // erase the sector(s)
     FLASH_EraseInitTypeDef EraseInitStruct;
 
 #if defined(MCU_SERIES_L1)
     EraseInitStruct.TypeErase = TYPEERASE_PAGES;
     EraseInitStruct.PageAddress = flash_get_sector_info(flash_dest, NULL, NULL);
-    EraseInitStruct.NbPages = flash_get_sector_info(flash_dest + 4 * num_word32 - 1, NULL, NULL) - EraseInitStruct.Sector + 1;
+    EraseInitStruct.NbPages = flash_get_sector_info(flash_dest + 4 * num_word32 - 1, NULL, NULL) - EraseInitStruct.PageAddress + 1;
 #else
     EraseInitStruct.TypeErase = TYPEERASE_SECTORS;
     EraseInitStruct.VoltageRange = VOLTAGE_RANGE_3; // voltage range needs to be 2.7V to 3.6V

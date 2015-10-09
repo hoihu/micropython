@@ -171,6 +171,38 @@ void SystemInit(void)
   #if (__FPU_PRESENT == 1) && (__FPU_USED == 1)
     SCB->CPACR |= ((3UL << 10*2)|(3UL << 11*2));  /* set CP10 and CP11 Full Access */
   #endif
+  #if defined(MCU_SERIES_L1)
+  /*!< Set MSION bit */
+  RCC->CR |= (uint32_t)0x00000100;
+
+  /*!< Reset SW[1:0], HPRE[3:0], PPRE1[2:0], PPRE2[2:0], MCOSEL[2:0] and MCOPRE[2:0] bits */
+  RCC->CFGR &= (uint32_t)0x88FFC00C;
+
+  /*!< Reset HSION, HSEON, CSSON and PLLON bits */
+  RCC->CR &= (uint32_t)0xEEFEFFFE;
+
+  /*!< Reset HSEBYP bit */
+  RCC->CR &= (uint32_t)0xFFFBFFFF;
+
+  /*!< Reset PLLSRC, PLLMUL[3:0] and PLLDIV[1:0] bits */
+  RCC->CFGR &= (uint32_t)0xFF02FFFF;
+
+  /*!< Disable all interrupts */
+  RCC->CIR = 0x00000000;
+
+  #ifdef DATA_IN_ExtSRAM
+  SystemInit_ExtMemCtl();
+  #endif /* DATA_IN_ExtSRAM */
+
+  #ifdef VECT_TAB_SRAM
+  SCB->VTOR = SRAM_BASE | VECT_TAB_OFFSET; /* Vector Table Relocation in Internal SRAM. */
+  #else
+  SCB->VTOR = FLASH_BASE | VECT_TAB_OFFSET; /* Vector Table Relocation in Internal FLASH. */
+  #endif
+
+  #else // MCU_SERIES_L1
+
+
   /* Reset the RCC clock configuration to the default reset state ------------*/
   /* Set HSION bit */
   RCC->CR |= (uint32_t)0x00000001;
@@ -196,6 +228,9 @@ void SystemInit(void)
 #else
   SCB->VTOR = FLASH_BASE | VECT_TAB_OFFSET; /* Vector Table Relocation in Internal FLASH */
 #endif
+
+  #endif // MCU_SERIES_L1
+
 
   /* dpgeorge: enable 8-byte stack alignment for IRQ handlers, in accord with EABI */
   SCB->CCR |= SCB_CCR_STKALIGN_Msk;
@@ -274,10 +309,15 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+  #if defined(MCU_SERIES_L1)
+  RCC_OscInitStruct.PLL.PLLMUL          = RCC_PLL_MUL6;
+  RCC_OscInitStruct.PLL.PLLDIV          = RCC_PLL_DIV3;
+  #else
   RCC_OscInitStruct.PLL.PLLM = MICROPY_HW_CLK_PLLM;
   RCC_OscInitStruct.PLL.PLLN = MICROPY_HW_CLK_PLLN;
   RCC_OscInitStruct.PLL.PLLP = MICROPY_HW_CLK_PLLP;
   RCC_OscInitStruct.PLL.PLLQ = MICROPY_HW_CLK_PLLQ;
+  #endif
   if(HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     __fatal_error("HAL_RCC_OscConfig");
@@ -300,7 +340,11 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
 
 #if !defined(MICROPY_HW_FLASH_LATENCY)
-#define MICROPY_HW_FLASH_LATENCY FLASH_LATENCY_5
+  #if defined(MCU_SERIES_L1)
+  #define MICROPY_HW_FLASH_LATENCY FLASH_LATENCY_1
+  #else
+  #define MICROPY_HW_FLASH_LATENCY FLASH_LATENCY_5
+  #endif
 #endif
 
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, MICROPY_HW_FLASH_LATENCY) != HAL_OK)

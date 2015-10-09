@@ -74,7 +74,7 @@ STATIC NORETURN mp_obj_t pyb_bootloader(void) {
     HAL_RCC_DeInit();
     HAL_DeInit();
 
-#if defined(MCU_SERIES_F7) || defined(MCU_SERIES_L1) 
+#if defined(MCU_SERIES_F7) || defined(MCU_SERIES_L1)
     // arm-none-eabi-gcc 4.9.0 does not correctly inline this
     // MSP function, so we write it out explicitly here.
     //__set_MSP(*((uint32_t*) 0x1FF00000));
@@ -319,10 +319,15 @@ STATIC mp_obj_t pyb_freq(mp_uint_t n_args, const mp_obj_t *args) {
         RCC_OscInitStruct.HSEState = RCC_HSE_ON;
         RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
         RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+        #if defined(MCU_SERIES_L1)
+        RCC_OscInitStruct.PLL.PLLMUL = n;
+        RCC_OscInitStruct.PLL.PLLDIV = m;
+        #else
         RCC_OscInitStruct.PLL.PLLM = m;
         RCC_OscInitStruct.PLL.PLLN = n;
         RCC_OscInitStruct.PLL.PLLP = p;
         RCC_OscInitStruct.PLL.PLLQ = q;
+        #endif
         if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
             goto fail;
         }
@@ -331,7 +336,11 @@ STATIC mp_obj_t pyb_freq(mp_uint_t n_args, const mp_obj_t *args) {
         if (sysclk_source == RCC_SYSCLKSOURCE_PLLCLK) {
             RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_SYSCLK;
             RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+            #if defined(MCU_SERIES_L1)
+            if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK) {
+            #else
             if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK) {
+            #endif
                 goto fail;
             }
         }
@@ -435,8 +444,11 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(pyb_udelay_obj, pyb_udelay);
 /// \function stop()
 STATIC mp_obj_t pyb_stop(void) {
     // takes longer to wake but reduces stop current
+    #if defined(MCU_SERIES_L1)
+    //HAL_PWR_EnableFlashPowerDown();
+    #else
     HAL_PWREx_EnableFlashPowerDown();
-
+    #endif
     HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_STOPENTRY_WFI);
 
     // reconfigure the system clock after waking up

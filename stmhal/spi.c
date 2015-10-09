@@ -85,7 +85,7 @@
 ///     spi.send_recv(b'1234', buf)          # send 4 bytes and receive 4 into buf
 ///     spi.send_recv(buf, buf)              # send/recv 4 bytes from/to buf
 
-// Possible DMA configurations for SPI busses:
+// Possible DMA configurations for SPI busses (F4):
 // SPI1_TX: DMA2_Stream3.CHANNEL_3 or DMA2_Stream5.CHANNEL_3
 // SPI1_RX: DMA2_Stream0.CHANNEL_3 or DMA2_Stream2.CHANNEL_3
 // SPI2_TX: DMA1_Stream4.CHANNEL_0
@@ -93,13 +93,30 @@
 // SPI3_TX: DMA1_Stream5.CHANNEL_0 or DMA1_Stream7.CHANNEL_0
 // SPI3_RX: DMA1_Stream0.CHANNEL_0 or DMA1_Stream2.CHANNEL_0
 
+// L1 family DMA assignment:
+// SPI1_TX: DMA1_Channel3
+// SPI1_RX: DMA1_Channel2
+// SPI2_TX: DMA1_Channel5
+// SPI2_RX: DMA1_Channel4
+// SPI3_TX: DMA2_Channel2
+// SPI3_RX: DMA2_Channel1
+//
+
 typedef struct _pyb_spi_obj_t {
     mp_obj_base_t base;
     SPI_HandleTypeDef *spi;
+    #if defined(MCU_SERIES_L1)
+    DMA_Channel_TypeDef *tx_dma_stream;
+    uint32_t tx_dma_channel;
+    DMA_Channel_TypeDef *rx_dma_stream;
+    uint32_t rx_dma_channel;
+    #else
     DMA_Stream_TypeDef *tx_dma_stream;
     uint32_t tx_dma_channel;
     DMA_Stream_TypeDef *rx_dma_stream;
     uint32_t rx_dma_channel;
+    #endif
+
 } pyb_spi_obj_t;
 
 #if MICROPY_HW_ENABLE_SPI1
@@ -114,7 +131,12 @@ SPI_HandleTypeDef SPIHandle3 = {.Instance = NULL};
 
 STATIC const pyb_spi_obj_t pyb_spi_obj[] = {
 #if MICROPY_HW_ENABLE_SPI1
+    #if defined(MCU_SERIES_L1)
+    //XXX
+    {{&pyb_spi_type}, &SPIHandle1, DMA1_Channel3, 3, DMA1_Channel2, 2},
+    #else
     {{&pyb_spi_type}, &SPIHandle1, DMA2_Stream5, DMA_CHANNEL_3, DMA2_Stream2, DMA_CHANNEL_3},
+    #endif
 #else
     {{&pyb_spi_type}, NULL, NULL, 0, NULL, 0},
 #endif
@@ -151,7 +173,11 @@ void spi_init(SPI_HandleTypeDef *spi, bool enable_nss_pin) {
     // init the GPIO lines
     GPIO_InitTypeDef GPIO_InitStructure;
     GPIO_InitStructure.Mode = GPIO_MODE_AF_PP;
+    #if defined(MCU_SERIES_L1)
+    GPIO_InitStructure.Speed = GPIO_SPEED_HIGH;
+    #else
     GPIO_InitStructure.Speed = GPIO_SPEED_FAST;
+    #endif
     GPIO_InitStructure.Pull = spi->Init.CLKPolarity == SPI_POLARITY_LOW ? GPIO_PULLDOWN : GPIO_PULLUP;
 
     const pyb_spi_obj_t *self;

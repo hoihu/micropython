@@ -366,7 +366,11 @@ STATIC mp_obj_t pin_obj_init_helper(const pin_obj_t *self, mp_uint_t n_args, con
     GPIO_InitStructure.Pin = self->pin_mask;
     GPIO_InitStructure.Mode = mode;
     GPIO_InitStructure.Pull = pull;
+    #if !defined(MCU_SERIES_L1)
     GPIO_InitStructure.Speed = GPIO_SPEED_FAST;
+    #else
+    GPIO_InitStructure.Speed = GPIO_SPEED_HIGH;
+    #endif
     GPIO_InitStructure.Alternate = af;
     HAL_GPIO_Init(self->gpio, &GPIO_InitStructure);
 

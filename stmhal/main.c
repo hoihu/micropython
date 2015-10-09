@@ -61,6 +61,7 @@
 #include "can.h"
 #include "modnetwork.h"
 #include MICROPY_HAL_H
+#include "stm32_hal_legacy.h"
 
 void SystemClock_Config(void);
 
@@ -357,8 +358,10 @@ int main(void) {
     // which behaves more or less like normal SRAM.
     __HAL_RCC_DTCMRAMEN_CLK_ENABLE();
     #else
+    #if defined(MCU_SERIES_F4)
     // enable the CCM RAM
     __CCMDATARAMEN_CLK_ENABLE();
+    #endif
     #endif
 
     #if defined(MICROPY_BOARD_EARLY_INIT)

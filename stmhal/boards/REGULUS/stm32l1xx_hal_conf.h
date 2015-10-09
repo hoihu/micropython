@@ -45,7 +45,7 @@
  extern "C" {
 #endif
 
-#define USE_USB_FS
+// #define USE_USB_FS
 
 /* Exported types ------------------------------------------------------------*/
 /* Exported constants --------------------------------------------------------*/
@@ -65,7 +65,7 @@
 #define HAL_FLASH_MODULE_ENABLED
 #define HAL_GPIO_MODULE_ENABLED
 #define HAL_I2C_MODULE_ENABLED
-#define HAL_I2S_MODULE_ENABLED
+// #define HAL_I2S_MODULE_ENABLED
 // #define HAL_IRDA_MODULE_ENABLED
 #define HAL_IWDG_MODULE_ENABLED
 // #define HAL_LCD_MODULE_ENABLED
@@ -75,7 +75,7 @@
 #define HAL_PWR_MODULE_ENABLED
 #define HAL_RCC_MODULE_ENABLED
 #define HAL_RTC_MODULE_ENABLED
-#define HAL_SD_MODULE_ENABLED
+// #define HAL_SD_MODULE_ENABLED
 // #define HAL_SMARTCARD_MODULE_ENABLED
 #define HAL_SPI_MODULE_ENABLED
 //#define HAL_SRAM_MODULE_ENABLED

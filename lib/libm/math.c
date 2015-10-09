@@ -83,11 +83,24 @@ double __aeabi_dmul(double x , double y) {
 }
 
 float sqrtf(float x) {
+#if defined(MCU_SERIES_L1)
+    // log2 base approximation for devices without HW sqrt support:
+    // see http://ilab.usc.edu/wiki/index.php/Fast_Square_Root
+    union  {
+        int i;
+        float x;
+    } u;
+
+    u.x = x;
+    u.i = (1<<29) + (u.i >> 1) - (1<<22);
+    return u.x;
+#else
     asm volatile (
             "vsqrt.f32  %[r], %[x]\n"
             : [r] "=t" (x)
             : [x] "t"  (x));
     return x;
+#endif
 }
 
 #ifndef NDEBUG

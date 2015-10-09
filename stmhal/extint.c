@@ -115,7 +115,7 @@ STATIC const uint8_t nvic_irq_channel[EXTI_NUM_VECTORS] = {
     EXTI15_10_IRQn,
 // internal sources 16-22 are MCU dependant
 #if defined(MCU_SERIES_L1)
-    PVD_IRQn,       RTC_Alarm_IRQn, OTG_FS_WKUP_IRQn, TAMPER_STAMP_IRQn,
+    PVD_IRQn,       RTC_Alarm_IRQn, USB_FS_WKUP_IRQn, TAMPER_STAMP_IRQn,
     RTC_WKUP_IRQn, COMP_IRQn, COMP_IRQn, COMP_ACQ_IRQn
 #else
     PVD_IRQn,       RTC_Alarm_IRQn, OTG_FS_WKUP_IRQn, ETH_WKUP_IRQn,
@@ -179,7 +179,11 @@ uint extint_register(mp_obj_t pin_obj, uint32_t mode, uint32_t pull, mp_obj_t ca
         exti.Pin = pin->pin_mask;
         exti.Mode = mode;
         exti.Pull = pull;
+        #if defined(MCU_SERIES_L1)
+        exti.Speed = GPIO_SPEED_HIGH;
+        #else
         exti.Speed = GPIO_SPEED_FAST;
+        #endif
         HAL_GPIO_Init(pin->gpio, &exti);
 
         // Calling HAL_GPIO_Init does an implicit extint_enable

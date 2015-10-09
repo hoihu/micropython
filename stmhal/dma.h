@@ -26,6 +26,12 @@
 
 extern const DMA_InitTypeDef dma_init_struct_spi_i2c;
 
+#if defined(MCU_SERIES_L1)
+void dma_init(DMA_HandleTypeDef *dma, DMA_Channel_TypeDef *dma_stream, const DMA_InitTypeDef *dma_init, uint32_t dma_channel, uint32_t direction, void *data);
+void dma_deinit(DMA_HandleTypeDef *dma);
+void dma_invalidate_channel(DMA_Channel_TypeDef *dma_stream, uint32_t dma_channel);
+#else
 void dma_init(DMA_HandleTypeDef *dma, DMA_Stream_TypeDef *dma_stream, const DMA_InitTypeDef *dma_init, uint32_t dma_channel, uint32_t direction, void *data);
 void dma_deinit(DMA_HandleTypeDef *dma);
 void dma_invalidate_channel(DMA_Stream_TypeDef *dma_stream, uint32_t dma_channel);
+#endif

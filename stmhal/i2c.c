@@ -116,9 +116,14 @@
 typedef struct _pyb_i2c_obj_t {
     mp_obj_base_t base;
     I2C_HandleTypeDef *i2c;
+    #if defined(MCU_SERIES_L1)
+    DMA_Channel_TypeDef *tx_dma_stream;
+    DMA_Channel_TypeDef *rx_dma_stream;
+    #else
     DMA_Stream_TypeDef *tx_dma_stream;
-    uint32_t tx_dma_channel;
     DMA_Stream_TypeDef *rx_dma_stream;
+    #endif
+    uint32_t tx_dma_channel;
     uint32_t rx_dma_channel;
 } pyb_i2c_obj_t;
 
