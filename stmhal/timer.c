@@ -267,7 +267,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
         }
 
     } else if (htim == &TIM5_Handle) {
-        servo_timer_irq_callback();
+        // servo_timer_irq_callback();
     }
 }
 

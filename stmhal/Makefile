@@ -76,34 +76,7 @@ endif
 SRC_LIB = $(addprefix lib/,\
 	libc/string0.c \
 	libm/math.c \
-	libm/asinfacosf.c \
-	libm/atanf.c \
-	libm/atan2f.c \
-	libm/fmodf.c \
-	libm/roundf.c \
-	libm/log1pf.c \
-	libm/acoshf.c \
-	libm/asinhf.c \
-	libm/atanhf.c \
-	libm/kf_rem_pio2.c \
-	libm/kf_sin.c \
-	libm/kf_cos.c \
-	libm/kf_tan.c \
-	libm/ef_rem_pio2.c \
-	libm/erf_lgamma.c \
-	libm/sf_sin.c \
-	libm/sf_cos.c \
-	libm/sf_tan.c \
-	libm/sf_frexp.c \
-	libm/sf_modf.c \
-	libm/sf_ldexp.c \
-	libm/sf_erf.c \
-	libm/wf_lgamma.c \
-	libm/wf_tgamma.c \
-	fatfs/ff.c \
-	fatfs/option/ccsbcs.c \
 	mp-readline/readline.c \
-	netutils/netutils.c \
 	timeutils/timeutils.c \
 	)
 
@@ -135,11 +108,7 @@ SRC_C = \
 	input.c \
 	modpyb.c \
 	modstm.c \
-	moduos.c \
 	modutime.c \
-	moduselect.c \
-	modusocket.c \
-	modnetwork.c \
 	import.c \
 	lexerfatfs.c \
 	extint.c \
@@ -147,12 +116,6 @@ SRC_C = \
 	rng.c \
 	rtc.c \
 	flash.c \
-	file.c \
-	sdcard.c \
-	fsusermount.c \
-	diskio.c \
-	ffconf.c \
-	lcd.c \
 	$(wildcard boards/$(BOARD)/*.c)
 
 SRC_O = \

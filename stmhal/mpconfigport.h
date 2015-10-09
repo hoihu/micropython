@@ -91,6 +91,14 @@ extern const struct _mp_obj_module_t mp_module_uzlib;
 extern const struct _mp_obj_module_t mp_module_ujson;
 extern const struct _mp_obj_module_t mp_module_uheapq;
 extern const struct _mp_obj_module_t mp_module_uhashlib;
+// extra built in modules to add to the list of known ones
+extern const struct _mp_obj_module_t pyb_module;
+extern const struct _mp_obj_module_t stm_module;
+extern const struct _mp_obj_module_t mp_module_uos;
+extern const struct _mp_obj_module_t mp_module_utime;
+extern const struct _mp_obj_module_t mp_module_uselect;
+extern const struct _mp_obj_module_t mp_module_usocket;
+extern const struct _mp_obj_module_t mp_module_network;
 
 #else
 
@@ -106,6 +114,8 @@ extern const struct _mp_obj_module_t mp_module_uhashlib;
 #define MICROPY_PY_URE              (0)
 #define MICROPY_PY_UHEAPQ           (0)
 #define MICROPY_PY_UHASHLIB         (0)
+extern const struct _mp_obj_module_t pyb_module;
+extern const struct _mp_obj_module_t stm_module;
 #endif
 
 
@@ -121,36 +131,14 @@ extern const struct _mp_obj_fun_builtin_t mp_builtin_open_obj;
     { MP_OBJ_NEW_QSTR(MP_QSTR_input), (mp_obj_t)&mp_builtin_input_obj }, \
     { MP_OBJ_NEW_QSTR(MP_QSTR_open), (mp_obj_t)&mp_builtin_open_obj },
 
-// extra built in modules to add to the list of known ones
-extern const struct _mp_obj_module_t pyb_module;
-extern const struct _mp_obj_module_t stm_module;
-extern const struct _mp_obj_module_t mp_module_uos;
-extern const struct _mp_obj_module_t mp_module_utime;
-extern const struct _mp_obj_module_t mp_module_uselect;
-extern const struct _mp_obj_module_t mp_module_usocket;
-extern const struct _mp_obj_module_t mp_module_network;
+
 
 #define MICROPY_PORT_BUILTIN_MODULES \
     { MP_OBJ_NEW_QSTR(MP_QSTR_pyb), (mp_obj_t)&pyb_module }, \
     { MP_OBJ_NEW_QSTR(MP_QSTR_stm), (mp_obj_t)&stm_module }, \
-    { MP_OBJ_NEW_QSTR(MP_QSTR_uos), (mp_obj_t)&mp_module_uos }, \
-    { MP_OBJ_NEW_QSTR(MP_QSTR_utime), (mp_obj_t)&mp_module_utime }, \
-    { MP_OBJ_NEW_QSTR(MP_QSTR_uselect), (mp_obj_t)&mp_module_uselect }, \
-    { MP_OBJ_NEW_QSTR(MP_QSTR_usocket), (mp_obj_t)&mp_module_usocket }, \
-    { MP_OBJ_NEW_QSTR(MP_QSTR_network), (mp_obj_t)&mp_module_network }, \
 
 #define MICROPY_PORT_BUILTIN_MODULE_WEAK_LINKS \
-    { MP_OBJ_NEW_QSTR(MP_QSTR_binascii), (mp_obj_t)&mp_module_ubinascii }, \
     { MP_OBJ_NEW_QSTR(MP_QSTR_re), (mp_obj_t)&mp_module_ure }, \
-    { MP_OBJ_NEW_QSTR(MP_QSTR_zlib), (mp_obj_t)&mp_module_uzlib }, \
-    { MP_OBJ_NEW_QSTR(MP_QSTR_json), (mp_obj_t)&mp_module_ujson }, \
-    { MP_OBJ_NEW_QSTR(MP_QSTR_heapq), (mp_obj_t)&mp_module_uheapq }, \
-    { MP_OBJ_NEW_QSTR(MP_QSTR_hashlib), (mp_obj_t)&mp_module_uhashlib }, \
-    { MP_OBJ_NEW_QSTR(MP_QSTR_os), (mp_obj_t)&mp_module_uos }, \
-    { MP_OBJ_NEW_QSTR(MP_QSTR_time), (mp_obj_t)&mp_module_utime }, \
-    { MP_OBJ_NEW_QSTR(MP_QSTR_select), (mp_obj_t)&mp_module_uselect }, \
-    { MP_OBJ_NEW_QSTR(MP_QSTR_socket), (mp_obj_t)&mp_module_usocket }, \
-    { MP_OBJ_NEW_QSTR(MP_QSTR_struct), (mp_obj_t)&mp_module_ustruct }, \
 
 // extra constants
 #define MICROPY_PORT_CONSTANTS \

@@ -253,81 +253,81 @@ void init_flash_fs(uint reset_mode) {
         led_state(PYB_LED_R2, 0);
     }
 }
-
-STATIC uint update_reset_mode(uint reset_mode) {
-#if MICROPY_HW_HAS_SWITCH
-    if (switch_get()) {
-
-        // The original method used on the pyboard is appropriate if you have 2
-        // or more LEDs.
-#if defined(MICROPY_HW_LED2)
-        for (uint i = 0; i < 3000; i++) {
-            if (!switch_get()) {
-                break;
-            }
-            HAL_Delay(20);
-            if (i % 30 == 29) {
-                if (++reset_mode > 3) {
-                    reset_mode = 1;
-                }
-                led_state(2, reset_mode & 1);
-                led_state(3, reset_mode & 2);
-                led_state(4, reset_mode & 4);
-            }
-        }
-        // flash the selected reset mode
-        for (uint i = 0; i < 6; i++) {
-            led_state(2, 0);
-            led_state(3, 0);
-            led_state(4, 0);
-            HAL_Delay(50);
-            led_state(2, reset_mode & 1);
-            led_state(3, reset_mode & 2);
-            led_state(4, reset_mode & 4);
-            HAL_Delay(50);
-        }
-        HAL_Delay(400);
-
-#elif defined(MICROPY_HW_LED1)
-
-        // For boards with only a single LED, we'll flash that LED the
-        // appropriate number of times, with a pause between each one
-        for (uint i = 0; i < 10; i++) {
-            led_state(1, 0);
-            for (uint j = 0; j < reset_mode; j++) {
-                if (!switch_get()) {
-                    break;
-                }
-                led_state(1, 1);
-                HAL_Delay(100);
-                led_state(1, 0);
-                HAL_Delay(200);
-            }
-            HAL_Delay(400);
-            if (!switch_get()) {
-                break;
-            }
-            if (++reset_mode > 3) {
-                reset_mode = 1;
-            }
-        }
-        // Flash the selected reset mode
-        for (uint i = 0; i < 2; i++) {
-            for (uint j = 0; j < reset_mode; j++) {
-                led_state(1, 1);
-                HAL_Delay(100);
-                led_state(1, 0);
-                HAL_Delay(200);
-            }
-            HAL_Delay(400);
-        }
-#else
-#error Need a reset mode update method
-#endif
-    }
-#endif
-    return reset_mode;
-}
+//
+// STATIC uint update_reset_mode(uint reset_mode) {
+// #if MICROPY_HW_HAS_SWITCH
+//     if (switch_get()) {
+//
+//         // The original method used on the pyboard is appropriate if you have 2
+//         // or more LEDs.
+// #if defined(MICROPY_HW_LED2)
+//         for (uint i = 0; i < 3000; i++) {
+//             if (!switch_get()) {
+//                 break;
+//             }
+//             HAL_Delay(20);
+//             if (i % 30 == 29) {
+//                 if (++reset_mode > 3) {
+//                     reset_mode = 1;
+//                 }
+//                 led_state(2, reset_mode & 1);
+//                 led_state(3, reset_mode & 2);
+//                 led_state(4, reset_mode & 4);
+//             }
+//         }
+//         // flash the selected reset mode
+//         for (uint i = 0; i < 6; i++) {
+//             led_state(2, 0);
+//             led_state(3, 0);
+//             led_state(4, 0);
+//             HAL_Delay(50);
+//             led_state(2, reset_mode & 1);
+//             led_state(3, reset_mode & 2);
+//             led_state(4, reset_mode & 4);
+//             HAL_Delay(50);
+//         }
+//         HAL_Delay(400);
+//
+// #elif defined(MICROPY_HW_LED1)
+//
+//         // For boards with only a single LED, we'll flash that LED the
+//         // appropriate number of times, with a pause between each one
+//         for (uint i = 0; i < 10; i++) {
+//             led_state(1, 0);
+//             for (uint j = 0; j < reset_mode; j++) {
+//                 if (!switch_get()) {
+//                     break;
+//                 }
+//                 led_state(1, 1);
+//                 HAL_Delay(100);
+//                 led_state(1, 0);
+//                 HAL_Delay(200);
+//             }
+//             HAL_Delay(400);
+//             if (!switch_get()) {
+//                 break;
+//             }
+//             if (++reset_mode > 3) {
+//                 reset_mode = 1;
+//             }
+//         }
+//         // Flash the selected reset mode
+//         for (uint i = 0; i < 2; i++) {
+//             for (uint j = 0; j < reset_mode; j++) {
+//                 led_state(1, 1);
+//                 HAL_Delay(100);
+//                 led_state(1, 0);
+//                 HAL_Delay(200);
+//             }
+//             HAL_Delay(400);
+//         }
+// #else
+// #error Need a reset mode update method
+// #endif
+//     }
+// #endif
+//     return reset_mode;
+// }
 
 int main(void) {
     // TODO disable JTAG
@@ -411,16 +411,16 @@ int main(void) {
 soft_reset:
 
     // check if user switch held to select the reset mode
-#if defined(MICROPY_HW_LED2)
-    led_state(1, 0);
-    led_state(2, 1);
-#else
-    led_state(1, 1);
-    led_state(2, 0);
-#endif
-    led_state(3, 0);
-    led_state(4, 0);
-    uint reset_mode = update_reset_mode(1);
+// #if defined(MICROPY_HW_LED2)
+//     led_state(1, 0);
+//     led_state(2, 1);
+// #else
+//     led_state(1, 1);
+//     led_state(2, 0);
+// #endif
+//     led_state(3, 0);
+//     led_state(4, 0);
+    // uint reset_mode = update_reset_mode(1);
 
 #if MICROPY_HW_ENABLE_RTC
     if (first_soft_reset) {
@@ -489,7 +489,7 @@ soft_reset:
 
     // Initialise the local flash filesystem.
     // Create it if needed, mount in on /flash, and set it as current dir.
-    init_flash_fs(reset_mode);
+    // init_flash_fs(reset_mode);
 
 #if MICROPY_HW_HAS_SDCARD
     // if an SD card is present then mount it on /sd/
@@ -524,21 +524,21 @@ soft_reset:
     // reset config variables; they should be set by boot.py
     MP_STATE_PORT(pyb_config_main) = MP_OBJ_NULL;
 
-    // run boot.py, if it exists
-    // TODO perhaps have pyb.reboot([bootpy]) function to soft-reboot and execute custom boot.py
-    if (reset_mode == 1) {
-        const char *boot_py = "boot.py";
-        FRESULT res = f_stat(boot_py, NULL);
-        if (res == FR_OK) {
-            int ret = pyexec_file(boot_py);
-            if (ret & PYEXEC_FORCED_EXIT) {
-                goto soft_reset_exit;
-            }
-            if (!ret) {
-                flash_error(4);
-            }
-        }
-    }
+    // // run boot.py, if it exists
+    // // TODO perhaps have pyb.reboot([bootpy]) function to soft-reboot and execute custom boot.py
+    // if (reset_mode == 1) {
+    //     const char *boot_py = "boot.py";
+    //     FRESULT res = f_stat(boot_py, NULL);
+    //     if (res == FR_OK) {
+    //         int ret = pyexec_file(boot_py);
+    //         if (ret & PYEXEC_FORCED_EXIT) {
+    //             goto soft_reset_exit;
+    //         }
+    //         if (!ret) {
+    //             flash_error(4);
+    //         }
+    //     }
+    // }
 
     // turn boot-up LEDs off
 #if !defined(MICROPY_HW_LED2)
@@ -561,45 +561,45 @@ soft_reset:
         pyb_usb_dev_init(USBD_VID, USBD_PID_CDC_MSC, USBD_MODE_CDC_MSC, NULL);
     }
 #endif
-
-#if MICROPY_HW_HAS_MMA7660
-    // MMA accel: init and reset
-    accel_init();
-#endif
-
-#if MICROPY_HW_ENABLE_SERVO
-    // servo
-    servo_init();
-#endif
-
-#if MICROPY_HW_ENABLE_DAC
-    // DAC
-    dac_init();
-#endif
-
-    mod_network_init();
+//
+// #if MICROPY_HW_HAS_MMA7660
+//     // MMA accel: init and reset
+//     accel_init();
+// #endif
+//
+// #if MICROPY_HW_ENABLE_SERVO
+//     // servo
+//     servo_init();
+// #endif
+//
+// #if MICROPY_HW_ENABLE_DAC
+//     // DAC
+//     dac_init();
+// #endif
+//
+//     mod_network_init();
 
     // At this point everything is fully configured and initialised.
 
     // Run the main script from the current directory.
-    if (reset_mode == 1 && pyexec_mode_kind == PYEXEC_MODE_FRIENDLY_REPL) {
-        const char *main_py;
-        if (MP_STATE_PORT(pyb_config_main) == MP_OBJ_NULL) {
-            main_py = "main.py";
-        } else {
-            main_py = mp_obj_str_get_str(MP_STATE_PORT(pyb_config_main));
-        }
-        FRESULT res = f_stat(main_py, NULL);
-        if (res == FR_OK) {
-            int ret = pyexec_file(main_py);
-            if (ret & PYEXEC_FORCED_EXIT) {
-                goto soft_reset_exit;
-            }
-            if (!ret) {
-                flash_error(3);
-            }
-        }
-    }
+    // if (reset_mode == 1 && pyexec_mode_kind == PYEXEC_MODE_FRIENDLY_REPL) {
+    //     const char *main_py;
+    //     if (MP_STATE_PORT(pyb_config_main) == MP_OBJ_NULL) {
+    //         main_py = "main.py";
+    //     } else {
+    //         main_py = mp_obj_str_get_str(MP_STATE_PORT(pyb_config_main));
+    //     }
+    //     FRESULT res = f_stat(main_py, NULL);
+    //     if (res == FR_OK) {
+    //         int ret = pyexec_file(main_py);
+    //         if (ret & PYEXEC_FORCED_EXIT) {
+    //             goto soft_reset_exit;
+    //         }
+    //         if (!ret) {
+    //             flash_error(3);
+    //         }
+    //     }
+    // }
 
     // Main script is finished, so now go into REPL mode.
     // The REPL mode can change, or it can request a soft reset.
@@ -615,13 +615,13 @@ soft_reset:
         }
     }
 
-soft_reset_exit:
+// soft_reset_exit:
 
     // soft reset
 
-    printf("PYB: sync filesystems\n");
-    storage_flush();
-
+    // printf("PYB: sync filesystems\n");
+    // storage_flush();
+    //
     printf("PYB: soft reboot\n");
     timer_deinit();
     uart_deinit();
