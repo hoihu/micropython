@@ -94,11 +94,6 @@ SRC_C = \
 	systick.c  \
 	timer.c \
 	led.c \
-	dma.c \
-	bufhelper.c \
-	spi.c \
-	uart.c \
-	can.c \
 	usb.c \
 	printf.c \
 	gccollect.c \
@@ -108,9 +103,7 @@ SRC_C = \
 	input.c \
 	modpyb.c \
 	modstm.c \
-	modutime.c \
 	import.c \
-	lexerfatfs.c \
 	extint.c \
 	usrsw.c \
 	rng.c \
