@@ -81,20 +81,21 @@ SRC_LIB = $(addprefix lib/,\
 	)
 
 SRC_C = \
-	main.c \
+	main_l1.c \
 	system_stm32.c \
 	stm32_it.c \
-	usbd_conf_l1.c \
 	usbd_desc.c \
 	usbd_cdc_interface.c \
-	usbd_msc_storage.c \
 	mphal.c \
 	irq.c \
+	bufhelper.c \
+	pin_named_pins.c \
 	pendsv.c \
 	systick.c  \
 	timer.c \
 	led.c \
 	usb.c \
+	uart.c \
 	printf.c \
 	gccollect.c \
 	pybstdio.c \
@@ -103,12 +104,11 @@ SRC_C = \
 	input.c \
 	modpyb.c \
 	modstm.c \
-	import.c \
 	extint.c \
 	usrsw.c \
 	rng.c \
 	rtc.c \
-	flash.c \
+	usbd_conf_l1.c \
 	$(wildcard boards/$(BOARD)/*.c)
 
 SRC_O = \
@@ -147,10 +147,7 @@ SRC_USBDEV = $(addprefix $(USBDEV_DIR)/,\
 	core/src/usbd_core.c \
 	core/src/usbd_ctlreq.c \
 	core/src/usbd_ioreq.c \
-	class/src/usbd_cdc_msc_hid.c \
-	class/src/usbd_msc_bot.c \
-	class/src/usbd_msc_scsi.c \
-	class/src/usbd_msc_data.c \
+	class/src/usbd_cdc.c \
 	)
 
 ifeq ($(MICROPY_PY_WIZNET5K),1)

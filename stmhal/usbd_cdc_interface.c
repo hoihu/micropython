@@ -282,7 +282,7 @@ void USBD_CDC_HAL_TIM_PeriodElapsedCallback(void) {
             #if defined(MCU_SERIES_L1)
             // PCD_TypeDef *USBx = hpcd->Instance;
             #else
-            USB_OTG_GlobalTypeDef *USBx = hpcd->Instance;
+            // USB_OTG_GlobalTypeDef *USBx = hpcd->Instance;
             #endif
             // if (USBx_INEP(CDC_IN_EP & 0x7f)->DIEPTSIZ & USB_OTG_DIEPTSIZ_XFRSIZ) {
             //     // USB in-endpoint is still reading the data

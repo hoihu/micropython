@@ -106,7 +106,7 @@ extern const struct _mp_obj_module_t mp_module_network;
 #define MICROPY_FLOAT_IMPL          (MICROPY_FLOAT_IMPL_NONE)
 #define MICROPY_PY_CMATH            (0)
 #define MICROPY_PY_IO               (1)
-#define MICROPY_PY_IO_FILEIO        (1)
+#define MICROPY_PY_IO_FILEIO        (0)
 #define MICROPY_PY_UBINASCII        (0)
 #define MICROPY_PY_UCTYPES          (1)
 #define MICROPY_PY_UZLIB            (0)
@@ -137,8 +137,6 @@ extern const struct _mp_obj_fun_builtin_t mp_builtin_open_obj;
     { MP_OBJ_NEW_QSTR(MP_QSTR_pyb), (mp_obj_t)&pyb_module }, \
     { MP_OBJ_NEW_QSTR(MP_QSTR_stm), (mp_obj_t)&stm_module }, \
 
-#define MICROPY_PORT_BUILTIN_MODULE_WEAK_LINKS \
-    { MP_OBJ_NEW_QSTR(MP_QSTR_re), (mp_obj_t)&mp_module_ure }, \
 
 // extra constants
 #define MICROPY_PORT_CONSTANTS \

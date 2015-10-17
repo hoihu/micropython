@@ -49,6 +49,7 @@ USBD_HandleTypeDef hUSBDDevice;
 pyb_usb_storage_medium_t pyb_usb_storage_medium = PYB_USB_STORAGE_MEDIUM_NONE;
 #endif
 
+#ifndef USB_CDC_ONLY
 // predefined hid mouse data
 STATIC const mp_obj_str_t pyb_usb_hid_mouse_desc_obj = {
     {&mp_type_bytes},
@@ -86,12 +87,15 @@ const mp_obj_tuple_t pyb_usb_hid_keyboard_obj = {
         (mp_obj_t)&pyb_usb_hid_keyboard_desc_obj,
     },
 };
+#endif
 
 void pyb_usb_init0(void) {
     // create an exception object for interrupting by VCP
     MP_STATE_PORT(mp_const_vcp_interrupt) = mp_obj_new_exception(&mp_type_KeyboardInterrupt);
     USBD_CDC_SetInterrupt(-1, MP_STATE_PORT(mp_const_vcp_interrupt));
+    #ifndef USB_CDC_ONLY
     MP_STATE_PORT(pyb_hid_report_desc) = MP_OBJ_NULL;
+    #endif
 }
 
 bool pyb_usb_dev_init(uint16_t vid, uint16_t pid, usb_device_mode_t mode, USBD_HID_ModeInfoTypeDef *hid_info) {
@@ -105,6 +109,7 @@ bool pyb_usb_dev_init(uint16_t vid, uint16_t pid, usb_device_mode_t mode, USBD_H
         USBD_Init(&hUSBDDevice, (USBD_DescriptorsTypeDef*)&USBD_Descriptors, 0);
         USBD_RegisterClass(&hUSBDDevice, &USBD_CDC_MSC_HID);
         USBD_CDC_RegisterInterface(&hUSBDDevice, (USBD_CDC_ItfTypeDef*)&USBD_CDC_fops);
+#ifndef USB_CDC_ONLY
         switch (pyb_usb_storage_medium) {
 #if MICROPY_HW_HAS_SDCARD
             case PYB_USB_STORAGE_MEDIUM_SDCARD:
@@ -115,6 +120,7 @@ bool pyb_usb_dev_init(uint16_t vid, uint16_t pid, usb_device_mode_t mode, USBD_H
                 USBD_MSC_RegisterStorage(&hUSBDDevice, (USBD_StorageTypeDef*)&USBD_FLASH_STORAGE_fops);
                 break;
         }
+#endif
         USBD_Start(&hUSBDDevice);
     }
     pyb_usb_flags |= PYB_USB_FLAG_DEV_ENABLED;
@@ -203,9 +209,11 @@ STATIC mp_obj_t pyb_usb_mode(mp_uint_t n_args, const mp_obj_t *pos_args, mp_map_
         { MP_QSTR_mode, MP_ARG_REQUIRED | MP_ARG_OBJ, {.u_obj = mp_const_none} },
         { MP_QSTR_vid, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = USBD_VID} },
         { MP_QSTR_pid, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = -1} },
+        #ifndef USB_CDC_ONLY
         { MP_QSTR_hid, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = (mp_obj_t)&pyb_usb_hid_mouse_obj} },
+        #endif
     };
-
+    #ifndef USB_CDC_ONLY
     // fetch the current usb mode -> pyb.usb_mode()
     if (n_args == 0) {
     #if defined(USE_HOST_MODE)
@@ -230,6 +238,11 @@ STATIC mp_obj_t pyb_usb_mode(mp_uint_t n_args, const mp_obj_t *pos_args, mp_map_
         }
     #endif
     }
+    #else
+        return MP_OBJ_NEW_QSTR(MP_QSTR_VCP);
+    #endif // USB_CDC_ONLY
+
+
 
     // parse args
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
@@ -524,6 +537,7 @@ const mp_obj_type_t pyb_usb_vcp_type = {
     .stream_p = &pyb_usb_vcp_stream_p,
     .locals_dict = (mp_obj_t)&pyb_usb_vcp_locals_dict,
 };
+#ifndef USB_CDC_ONLY
 
 /******************************************************************************/
 // Micro Python bindings for USB HID
@@ -609,6 +623,7 @@ const mp_obj_type_t pyb_usb_hid_type = {
     .locals_dict = (mp_obj_t)&pyb_usb_hid_locals_dict,
 };
 
+#endif // USB_CDC_ONLY
 /******************************************************************************/
 // code for experimental USB OTG support
 
