@@ -17,6 +17,9 @@
 #define MICROPY_HW_ENABLE_SPI3      (0)
 #define MICROPY_HW_ENABLE_CAN       (0)
 
+#define MICROPY_BOARD_EARLY_INIT    REGULUS_board_early_init
+void REGULUS_board_early_init(void);
+
 // HSE is 12MHz
 #define MICROPY_HW_CLK_PLLM (6)
 #define MICROPY_HW_CLK_PLLN (336)

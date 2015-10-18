@@ -1,6 +1,6 @@
 # Select the board to build for: if not given on the command line,
 # then default to PYBV10.
-BOARD ?= PYBV10
+BOARD ?= REGULUS
 ifeq ($(wildcard boards/$(BOARD)/.),)
 $(error Invalid BOARD specified)
 endif
@@ -83,7 +83,6 @@ SRC_LIB = $(addprefix lib/,\
 SRC_C = \
 	main_l1.c \
 	system_stm32.c \
-	stm32_it.c \
 	usbd_desc.c \
 	usbd_cdc_interface.c \
 	mphal.c \
@@ -112,7 +111,7 @@ SRC_C = \
 	$(wildcard boards/$(BOARD)/*.c)
 
 SRC_O = \
-	startup_stm32.o \
+	boards/$(BOARD)/startup_stm32l151xc.o \
 	gchelper.o \
 
 SRC_HAL = $(addprefix $(HAL_DIR)/src/stm32$(MCU_SERIES)xx_,\
@@ -207,19 +206,14 @@ all: $(BUILD)/firmware.dfu $(BUILD)/firmware.hex
 
 .PHONY: deploy
 
-deploy: $(BUILD)/firmware.dfu
-	$(ECHO) "Writing $< to the board"
-ifeq ($(USE_PYDFU),1)
-	$(Q)$(PYTHON) $(PYDFU) -u $<
-else
-	$(Q)$(DFU_UTIL) -a 0 -d $(DEVICE) -D $<
-endif
+deploy: download
 
-$(BUILD)/firmware.dfu: $(BUILD)/firmware.elf
+$(BUILD)/firmware.dfu: $(BUILD)/firmware.bin
 	$(ECHO) "Create $@"
-	$(Q)$(OBJCOPY) -O binary -j .isr_vector $^ $(BUILD)/firmware0.bin
-	$(Q)$(OBJCOPY) -O binary -j .text -j .data $^ $(BUILD)/firmware1.bin
-	$(Q)$(PYTHON) $(DFU) -b 0x08000000:$(BUILD)/firmware0.bin -b 0x08020000:$(BUILD)/firmware1.bin $@
+	$(PYTHON) $(DFU) -b 0x08000000:./$(BUILD)/firmware.bin $@
+
+$(BUILD)/firmware.bin: $(BUILD)/firmware.elf
+	@$(OBJCOPY) -O binary $< $@
 
 $(BUILD)/firmware.hex: $(BUILD)/firmware.elf
 	$(ECHO) "Create $@"
@@ -288,5 +282,8 @@ $(GEN_CDCINF_HEADER): $(GEN_CDCINF_FILE) $(FILE2H)
 $(GEN_CDCINF_FILE): $(CDCINF_TEMPLATE) $(INSERT_USB_IDS) $(USB_IDS_FILE)
 	$(ECHO) "Create $@"
 	$(Q)$(PYTHON) $(INSERT_USB_IDS) $(USB_IDS_FILE) $< > $@
+
+download: $(BUILD)/firmware.dfu
+	$(DFU_UTIL) -a 0 -d $(DEVICE) -D $<
 
 include ../py/mkrules.mk

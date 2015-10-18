@@ -140,8 +140,13 @@ void __fatal_error(const char *msg);
                is no need to call the 2 first functions listed above, since SystemCoreClock
                variable is updated automatically.
   */
+  #if defined(MCU_SERIES_L1)
+  uint32_t SystemCoreClock = 3200000;
+  __IO const uint8_t PLLMulTable[9] = {3, 4, 6, 8, 12, 16, 24, 32, 48};
+  __IO const uint8_t AHBPrescTable[16] = {0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 6, 7, 8, 9};
+  #else
   uint32_t SystemCoreClock = 16000000;
-
+  #endif
 /**
   * @}
   */
@@ -293,72 +298,41 @@ void SystemInit(void)
   */
 void SystemClock_Config(void)
 {
-  RCC_ClkInitTypeDef RCC_ClkInitStruct;
-  RCC_OscInitTypeDef RCC_OscInitStruct;
+    RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+    RCC_OscInitTypeDef RCC_OscInitStruct = {0};
 
-  /* Enable Power Control clock */
-  __PWR_CLK_ENABLE();
+    /* Enable HSE Oscillator and Activate PLL with HSE as source */
+    RCC_OscInitStruct.OscillatorType      = RCC_OSCILLATORTYPE_HSE;
+    RCC_OscInitStruct.HSEState            = RCC_HSE_ON;
+    RCC_OscInitStruct.PLL.PLLState        = RCC_PLL_ON;
+    RCC_OscInitStruct.PLL.PLLSource       = RCC_PLLSOURCE_HSE;
+    RCC_OscInitStruct.PLL.PLLMUL          = RCC_PLL_MUL6;
+    RCC_OscInitStruct.PLL.PLLDIV          = RCC_PLL_DIV3;
+    if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
+    {
+    //   Error_Handler();
+    }
+    /* Set Voltage scale1 as MCU will run at 32MHz */
+    __PWR_CLK_ENABLE();
+    __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
 
-  /* The voltage scaling allows optimizing the power consumption when the device is
-     clocked below the maximum system frequency, to update the voltage scaling value
-     regarding system frequency refer to product datasheet.  */
-  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
+    /* Poll VOSF bit of in PWR_CSR. Wait until it is reset to 0 */
+    while (__HAL_PWR_GET_FLAG(PWR_FLAG_VOS) != RESET) {};
+    /* Select PLL as system clock source and configure the HCLK, PCLK1 and PCLK2
+    clocks dividers */
+    RCC_ClkInitStruct.ClockType = (RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2);
+    RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+    RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+    RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
+    RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  /* Enable HSE Oscillator and activate PLL with HSE as source */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
-  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  #if defined(MCU_SERIES_L1)
-  RCC_OscInitStruct.PLL.PLLMUL          = RCC_PLL_MUL6;
-  RCC_OscInitStruct.PLL.PLLDIV          = RCC_PLL_DIV3;
-  #else
-  RCC_OscInitStruct.PLL.PLLM = MICROPY_HW_CLK_PLLM;
-  RCC_OscInitStruct.PLL.PLLN = MICROPY_HW_CLK_PLLN;
-  RCC_OscInitStruct.PLL.PLLP = MICROPY_HW_CLK_PLLP;
-  RCC_OscInitStruct.PLL.PLLQ = MICROPY_HW_CLK_PLLQ;
-  #endif
-  if(HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
-  {
-    __fatal_error("HAL_RCC_OscConfig");
-  }
 
-#if defined(MCU_SERIES_F7)
-  /* Activate the OverDrive to reach the 200 MHz Frequency */
-  if (HAL_PWREx_EnableOverDrive() != HAL_OK)
-  {
-    __fatal_error("HAL_PWREx_EnableOverDrive");
-  }
-#endif
+    #define MICROPY_HW_FLASH_LATENCY FLASH_LATENCY_1
 
-  /* Select PLL as system clock source and configure the HCLK, PCLK1 and PCLK2
-     clocks dividers */
-  RCC_ClkInitStruct.ClockType = (RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2);
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
+    if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, MICROPY_HW_FLASH_LATENCY) != HAL_OK)   {
+        __fatal_error("HAL_RCC_ClockConfig");
+    }
 
-#if !defined(MICROPY_HW_FLASH_LATENCY)
-  #if defined(MCU_SERIES_L1)
-  #define MICROPY_HW_FLASH_LATENCY FLASH_LATENCY_1
-  #else
-  #define MICROPY_HW_FLASH_LATENCY FLASH_LATENCY_5
-  #endif
-#endif
-
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, MICROPY_HW_FLASH_LATENCY) != HAL_OK)
-  {
-    __fatal_error("HAL_RCC_ClockConfig");
-  }
-
-#if defined(MCU_SERIES_F7)
-  // The DFU bootloader changes the clocksource register from its default power
-  // on reset value, so we set it back here, so the clocksources are the same
-  // whether we were started from DFU or from a power on reset.
-
-  RCC->DCKCFGR2 = 0;
-#endif
 }
 
 void HAL_MspInit(void) {
