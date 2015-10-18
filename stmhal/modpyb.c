@@ -550,9 +550,9 @@ STATIC const mp_map_elem_t pyb_module_globals_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR_standby), (mp_obj_t)&pyb_standby_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_main), (mp_obj_t)&pyb_main_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_repl_uart), (mp_obj_t)&pyb_repl_uart_obj },
-
-    { MP_OBJ_NEW_QSTR(MP_QSTR_usb_mode), (mp_obj_t)&pyb_usb_mode_obj },
+    
     #ifndef USB_CDC_ONLY
+    { MP_OBJ_NEW_QSTR(MP_QSTR_usb_mode), (mp_obj_t)&pyb_usb_mode_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_hid_mouse), (mp_obj_t)&pyb_usb_hid_mouse_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_hid_keyboard), (mp_obj_t)&pyb_usb_hid_keyboard_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_USB_HID), (mp_obj_t)&pyb_usb_hid_type },

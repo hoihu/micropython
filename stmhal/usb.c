@@ -30,9 +30,14 @@
 
 #include "usbd_core.h"
 #include "usbd_desc.h"
+#ifndef USB_CDC_ONLY
 #include "usbd_cdc_msc_hid.h"
-#include "usbd_cdc_interface.h"
 #include "usbd_msc_storage.h"
+#else
+#include "usbd_cdc.h"
+#endif
+
+#include "usbd_cdc_interface.h"
 
 #include "py/objstr.h"
 #include "py/runtime.h"
@@ -97,6 +102,19 @@ void pyb_usb_init0(void) {
     MP_STATE_PORT(pyb_hid_report_desc) = MP_OBJ_NULL;
     #endif
 }
+#ifdef USB_CDC_ONLY
+bool pyb_usb_dev_init_cdc(uint16_t vid, uint16_t pid) {
+    if (!(pyb_usb_flags & PYB_USB_FLAG_DEV_ENABLED)) {
+        // USBD_SetVIDPIDRelease(vid, pid, 0x0200);
+        USBD_Init(&hUSBDDevice, (USBD_DescriptorsTypeDef*)&USBD_Descriptors, 0);
+        USBD_RegisterClass(&hUSBDDevice, USBD_CDC_CLASS);
+        USBD_CDC_RegisterInterface(&hUSBDDevice, (USBD_CDC_ItfTypeDef*)&USBD_CDC_fops);
+        USBD_Start(&hUSBDDevice);
+    }
+    pyb_usb_flags |= PYB_USB_FLAG_DEV_ENABLED;
+    return true;
+}
+#else
 
 bool pyb_usb_dev_init(uint16_t vid, uint16_t pid, usb_device_mode_t mode, USBD_HID_ModeInfoTypeDef *hid_info) {
 #ifdef USE_DEVICE_MODE
@@ -109,7 +127,6 @@ bool pyb_usb_dev_init(uint16_t vid, uint16_t pid, usb_device_mode_t mode, USBD_H
         USBD_Init(&hUSBDDevice, (USBD_DescriptorsTypeDef*)&USBD_Descriptors, 0);
         USBD_RegisterClass(&hUSBDDevice, &USBD_CDC_MSC_HID);
         USBD_CDC_RegisterInterface(&hUSBDDevice, (USBD_CDC_ItfTypeDef*)&USBD_CDC_fops);
-#ifndef USB_CDC_ONLY
         switch (pyb_usb_storage_medium) {
 #if MICROPY_HW_HAS_SDCARD
             case PYB_USB_STORAGE_MEDIUM_SDCARD:
@@ -120,7 +137,6 @@ bool pyb_usb_dev_init(uint16_t vid, uint16_t pid, usb_device_mode_t mode, USBD_H
                 USBD_MSC_RegisterStorage(&hUSBDDevice, (USBD_StorageTypeDef*)&USBD_FLASH_STORAGE_fops);
                 break;
         }
-#endif
         USBD_Start(&hUSBDDevice);
     }
     pyb_usb_flags |= PYB_USB_FLAG_DEV_ENABLED;
@@ -128,6 +144,7 @@ bool pyb_usb_dev_init(uint16_t vid, uint16_t pid, usb_device_mode_t mode, USBD_H
 
     return true;
 }
+#endif
 
 void pyb_usb_dev_deinit(void) {
     if (pyb_usb_flags & PYB_USB_FLAG_DEV_ENABLED) {
@@ -175,6 +192,7 @@ void usb_vcp_send_strn_cooked(const char *str, int len) {
 #endif
 }
 
+#ifndef USB_CDC_ONLY
 /******************************************************************************/
 // Micro Python bindings for USB
 
@@ -336,6 +354,7 @@ bad_mode:
     nlr_raise(mp_obj_new_exception_msg(&mp_type_ValueError, "bad USB mode"));
 }
 MP_DEFINE_CONST_FUN_OBJ_KW(pyb_usb_mode_obj, 0, pyb_usb_mode);
+#endif // USB_CDC_ONLY
 
 /******************************************************************************/
 // Micro Python bindings for USB VCP

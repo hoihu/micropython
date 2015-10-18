@@ -53,7 +53,11 @@ MP_DECLARE_CONST_FUN_OBJ(pyb_have_cdc_obj); // deprecated
 MP_DECLARE_CONST_FUN_OBJ(pyb_hid_send_report_obj); // deprecated
 
 void pyb_usb_init0(void);
+#ifdef USB_CDC_ONLY
+bool pyb_usb_dev_init_cdc(uint16_t vid, uint16_t pid);
+#else
 bool pyb_usb_dev_init(uint16_t vid, uint16_t pid, usb_device_mode_t mode, USBD_HID_ModeInfoTypeDef *hid_info);
+#endif
 void pyb_usb_dev_deinit(void);
 bool usb_vcp_is_enabled(void);
 void usb_vcp_set_interrupt_char(int c);
