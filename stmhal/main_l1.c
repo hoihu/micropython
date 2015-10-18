@@ -32,6 +32,7 @@
 
 extern void SystemClock_Config(void);
 extern void pendsv_init(void);
+extern void toogle_debug(void);
 
 void storage_irq_handler() {}
 
@@ -60,25 +61,12 @@ static char heap[2048];
 
 int main(int argc, char **argv) {
 
-    uint32_t tickstart;
+    // uint32_t tickstart;
     // Stack limit should be less than real stack size, so we have a chance
     // to recover from limit hit.  (Limit is measured in bytes.)
     mp_stack_set_limit((char*)&_ram_end - (char*)&_heap_end - 1024);
 
     HAL_Init();
-    #if defined(MICROPY_BOARD_EARLY_INIT)
-    MICROPY_BOARD_EARLY_INIT();
-    #endif
-
-    tickstart = HAL_GetTick();
-
-    /* Wait till HSE is disabled */
-    while( tickstart + 20 > HAL_GetTick()) {
-        //toogle_debug();
-    }
-
-    // set the system clock to be HSE
-    SystemClock_Config();
 
     // enable GPIO clocks
     __GPIOA_CLK_ENABLE();
@@ -86,6 +74,18 @@ int main(int argc, char **argv) {
     __GPIOC_CLK_ENABLE();
     __GPIOD_CLK_ENABLE();
 
+    #if defined(MICROPY_BOARD_EARLY_INIT)
+    MICROPY_BOARD_EARLY_INIT();
+    #endif
+
+    // set the system clock to be HSE
+    SystemClock_Config();
+
+    // tickstart = HAL_GetTick();
+    // /* Wait till HSE is disabled */
+    // while( tickstart + 20 > HAL_GetTick()) {
+        // toogle_debug();
+    // }
     // basic sub-system init
     pendsv_init();
     // TIM3 is set-up for the USB CDC interface
@@ -111,12 +111,16 @@ int main(int argc, char **argv) {
     // extint_init0();
     timer_init0();
     // uart_init0();
+
     pyb_usb_init0();
 
     // init USB device to default setting if it was not already configured
     if (!(pyb_usb_flags & PYB_USB_FLAG_USB_MODE_CALLED)) {
         pyb_usb_dev_init_cdc(USBD_VID, USBD_PID_CDC_MSC);
     }
+
+    while (1);
+
 
     #if MICROPY_ENABLE_GC
     gc_init(heap, heap + sizeof(heap));

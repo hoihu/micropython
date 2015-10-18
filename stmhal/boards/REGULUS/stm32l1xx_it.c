@@ -318,8 +318,10 @@ void USB_FS_WKUP_IRQHandler(void) {
     /* Clear EXTI pending Bit*/
     __HAL_USB_WAKEUP_EXTI_CLEAR_FLAG();
 }
+extern void toogle_debug();
 
 void TIM3_IRQHandler(void) {
+    toogle_debug();
     HAL_TIM_IRQHandler(&TIM3_Handle);
 }
 

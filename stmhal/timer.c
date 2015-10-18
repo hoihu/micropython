@@ -182,18 +182,28 @@ void timer_deinit(void) {
 void timer_tim3_init(void) {
     // set up the timer for USBD CDC
     __TIM3_CLK_ENABLE();
+    // RCC->APB1ENR |= RCC_APB1ENR_TIM3EN;
+    //
+    // TIM3->PSC = 1000;	        // Set prescaler to 24 000 (PSC + 1)
+    // TIM3->ARR = 1000;	          // Auto reload value 1000
+    // TIM3->DIER = TIM_DIER_UIE; // Enable update interrupt (timer level)
+    // TIM3->CR1 = TIM_CR1_CEN;   // Enable timer
+
+
 
     TIM3_Handle.Instance = TIM3;
-    TIM3_Handle.Init.Period = (USBD_CDC_POLLING_INTERVAL*1000) - 1; // TIM3 fires every USBD_CDC_POLLING_INTERVAL ms
-    TIM3_Handle.Init.Prescaler = timer_get_source_freq(3) / 1000000 - 1; // TIM3 runs at 1MHz
-    TIM3_Handle.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+    TIM3_Handle.Init.Period = 10000-1;
+    // TIM3_Handle.Init.Period = (USBD_CDC_POLLING_INTERVAL*1000) - 1; // TIM3 fires every USBD_CDC_POLLING_INTERVAL ms
+    TIM3_Handle.Init.Prescaler = 84-1;
+    TIM3_Handle.Init.ClockDivision = 0;
     TIM3_Handle.Init.CounterMode = TIM_COUNTERMODE_UP;
     HAL_TIM_Base_Init(&TIM3_Handle);
+    //
+
 
     HAL_NVIC_SetPriority(TIM3_IRQn, 6, 0);
     HAL_NVIC_EnableIRQ(TIM3_IRQn);
-
-    if (HAL_TIM_Base_Start(&TIM3_Handle) != HAL_OK) {
+    if (HAL_TIM_Base_Start_IT(&TIM3_Handle) != HAL_OK) {
         /* Starting Error */
     }
 }

@@ -103,6 +103,7 @@ void pyb_usb_init0(void) {
     #endif
 }
 #ifdef USB_CDC_ONLY
+extern void toogle_debug(void);
 bool pyb_usb_dev_init_cdc(uint16_t vid, uint16_t pid) {
     if (!(pyb_usb_flags & PYB_USB_FLAG_DEV_ENABLED)) {
         // USBD_SetVIDPIDRelease(vid, pid, 0x0200);
@@ -110,6 +111,7 @@ bool pyb_usb_dev_init_cdc(uint16_t vid, uint16_t pid) {
         USBD_RegisterClass(&hUSBDDevice, USBD_CDC_CLASS);
         USBD_CDC_RegisterInterface(&hUSBDDevice, (USBD_CDC_ItfTypeDef*)&USBD_CDC_fops);
         USBD_Start(&hUSBDDevice);
+        toogle_debug();
     }
     pyb_usb_flags |= PYB_USB_FLAG_DEV_ENABLED;
     return true;

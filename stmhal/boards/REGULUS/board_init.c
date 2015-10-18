@@ -32,9 +32,13 @@
 
 
 void init_power_on_pin(void);
+void init_debug_pin(void);
+void toogle_debug(void);
 
 void REGULUS_board_early_init(void) {
     init_power_on_pin();
+    init_debug_pin();
+    toogle_debug();
 }
 
 void init_usb_dplus_pin(void) {
@@ -52,8 +56,6 @@ void init_usb_dplus_pin(void) {
     // enable pullup - usb master will poll no
     HAL_GPIO_WritePin(USB_DPLUS_GPIO_PORT, USB_DPLUS_PIN, GPIO_PIN_SET);
 }
-
-void toogle_debug(void);
 
 void init_debug_pin(void) {
     GPIO_InitTypeDef  gpioinitstruct = {0};

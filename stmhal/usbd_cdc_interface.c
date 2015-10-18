@@ -257,12 +257,14 @@ static int8_t CDC_Itf_Control(uint8_t cmd, uint8_t* pbuf, uint16_t length) {
     return USBD_OK;
 }
 
+extern void toogle_debug(void);
 /**
   * @brief  TIM period elapsed callback
   * @param  htim: TIM handle
   * @retval None
   */
 void USBD_CDC_HAL_TIM_PeriodElapsedCallback(void) {
+    toogle_debug();
     if (!dev_is_connected) {
         // CDC device is not connected to a host, so we are unable to send any data
         return;
@@ -341,7 +343,7 @@ static int8_t CDC_Itf_Receive(uint8_t* Buf, uint32_t *Len) {
 #endif
 
     // TODO improve this function to implement a circular buffer
-
+toogle_debug();
     // if we have processed all the characters, reset the buffer counters
     if (UserRxBufCur > 0 && UserRxBufCur >= UserRxBufLen) {
         memmove(UserRxBuffer, UserRxBuffer + UserRxBufLen, *Len);
