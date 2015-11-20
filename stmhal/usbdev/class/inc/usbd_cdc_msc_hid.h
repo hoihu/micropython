@@ -26,24 +26,27 @@ typedef struct {
   uint8_t  datatype;
 } USBD_CDC_LineCodingTypeDef;
 
+// Transmit callback has been added to avoid using a timer
+// for end-of-transmission check
 typedef struct _USBD_CDC_Itf {
   int8_t (* Init)          (void);
   int8_t (* DeInit)        (void);
-  int8_t (* Control)       (uint8_t, uint8_t * , uint16_t);   
-  int8_t (* Receive)       (uint8_t *, uint32_t *);  
+  int8_t (* Control)       (uint8_t, uint8_t * , uint16_t);
+  int8_t (* Receive)       (uint8_t *, uint32_t *);
+  void (* Transmit)      (void);
 } USBD_CDC_ItfTypeDef;
 
 typedef struct {
   uint32_t data[CDC_DATA_FS_MAX_PACKET_SIZE/4];      /* Force 32bits alignment */
   uint8_t  CmdOpCode;
-  uint8_t  CmdLength;    
-  uint8_t  *RxBuffer;  
-  uint8_t  *TxBuffer;   
+  uint8_t  CmdLength;
+  uint8_t  *RxBuffer;
+  uint8_t  *TxBuffer;
   uint32_t RxLength;
-  uint32_t TxLength;    
-  
-  __IO uint32_t TxState;     
-  __IO uint32_t RxState;    
+  uint32_t TxLength;
+
+  __IO uint32_t TxState;
+  __IO uint32_t RxState;
 } USBD_CDC_HandleTypeDef;
 
 typedef struct _USBD_STORAGE {
@@ -60,25 +63,29 @@ typedef struct _USBD_STORAGE {
 } USBD_StorageTypeDef;
 
 typedef struct {
-  uint32_t                 max_lun;   
-  uint32_t                 interface; 
+  uint32_t                 max_lun;
+  uint32_t                 interface;
   uint8_t                  bot_state;
-  uint8_t                  bot_status;  
+  uint8_t                  bot_status;
   uint16_t                 bot_data_length;
-  uint8_t                  bot_data[MSC_MEDIA_PACKET];  
+  uint8_t                  bot_data[MSC_MEDIA_PACKET];
   USBD_MSC_BOT_CBWTypeDef  cbw;
   USBD_MSC_BOT_CSWTypeDef  csw;
-  
+
   USBD_SCSI_SenseTypeDef   scsi_sense [SENSE_LIST_DEEPTH];
   uint8_t                  scsi_sense_head;
   uint8_t                  scsi_sense_tail;
-  
+
   uint16_t                 scsi_blk_size;
   uint32_t                 scsi_blk_nbr;
-  
+
   uint32_t                 scsi_blk_addr_in_blks;
   uint32_t                 scsi_blk_len;
 } USBD_MSC_BOT_HandleTypeDef;
+
+// CDC defines
+#define CDC_SET_CONTROL_LINE_STATE                              0x22
+#define CDC_GET_LINE_CODING                                     0x21
 
 #define USBD_HID_MOUSE_MAX_PACKET          (4)
 #define USBD_HID_MOUSE_REPORT_DESC_SIZE    (74)
