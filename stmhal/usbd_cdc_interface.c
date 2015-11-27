@@ -23,8 +23,8 @@
   *
   *        http://www.st.com/software_license_agreement_liberty_v2
   *
-  * Unless required by applicable law or agreed to in writing, software 
-  * distributed under the License is distributed on an "AS IS" BASIS, 
+  * Unless required by applicable law or agreed to in writing, software
+  * distributed under the License is distributed on an "AS IS" BASIS,
   * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   * See the License for the specific language governing permissions and
   * limitations under the License.
@@ -47,6 +47,33 @@
 #include "usb.h"
 #include "lib/utils/ringbuffer.h"
 
+// ----------- debug staff
+#include STM32_HAL_H
+
+#define DEBUG_PIN                         GPIO_PIN_0
+#define DEBUG_GPIO_PORT                   GPIOA
+#define DEBUG_GPIO_CLK_ENABLE()           __GPIOA_CLK_ENABLE()
+#define DEBUG_GPIO_CLK_DISABLE()          __GPIOA_CLK_DISABLE()
+
+void init_debug_pin(void) {
+    GPIO_InitTypeDef  gpioinitstruct = {0};
+    /* Enable the GPIO Clock */
+    DEBUG_GPIO_CLK_ENABLE();
+
+    /* Configure the USB D+ pin */
+    gpioinitstruct.Pin    = DEBUG_PIN;
+    gpioinitstruct.Mode   = GPIO_MODE_OUTPUT_PP;
+    gpioinitstruct.Pull   = GPIO_NOPULL;
+    gpioinitstruct.Speed  = GPIO_SPEED_LOW;
+    HAL_GPIO_Init(DEBUG_GPIO_PORT, &gpioinitstruct);
+}
+
+void toogle_debug(void) {
+    HAL_GPIO_WritePin(DEBUG_GPIO_PORT, DEBUG_PIN, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(DEBUG_GPIO_PORT, DEBUG_PIN, GPIO_PIN_RESET);
+}
+// -----------
+
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
 
@@ -57,8 +84,8 @@
 //    USB descriptor is 1msec - hence a theoretical maximum of 64kB /sec (or 512kBaud) is possible
 // 2) you may increase the size also if the application wants to send big block of data without
 //    being blocked by the timeout
-#define APP_RX_DATA_SIZE  1024
-#define APP_TX_DATA_SIZE  1024
+#define APP_RX_DATA_SIZE  256
+#define APP_TX_DATA_SIZE  256
 
 void CDC_Itf_TxFinished(void);
 void CDC_send_packet(void);
@@ -105,6 +132,8 @@ const USBD_CDC_ItfTypeDef USBD_CDC_fops = {
   */
 static int8_t CDC_Itf_Init(void)  {
     CDC_is_busy = false;
+
+    init_debug_pin();
 
     ringbuffer_init(&tx_ringbuffer, tx_buffer, APP_TX_DATA_SIZE);
     ringbuffer_init(&rx_ringbuffer, rx_buffer, APP_RX_DATA_SIZE);
@@ -170,8 +199,13 @@ static int8_t CDC_Itf_Control(uint8_t cmd, uint8_t* pbuf, uint16_t length) {
 void CDC_Itf_TxFinished(void) {
     if (ringbuffer_is_empty(&tx_ringbuffer)) {
         CDC_is_busy = false;
+        toogle_debug();
+        toogle_debug();
         return;
     }
+    toogle_debug();
+    toogle_debug();
+    toogle_debug();
     CDC_is_busy = true;
     CDC_send_packet();
 }
@@ -315,6 +349,7 @@ int USBD_CDC_RxNum(void) {
   *         checks for wraparound conditions
   */
 void CDC_send_packet(void) {
+    toogle_debug();
     if (tx_ringbuffer.push_ptr < tx_ringbuffer.pop_ptr) {
         // wraparound
         USBD_CDC_SetTxBuffer(&hUSBDDevice, (uint8_t*)(tx_ringbuffer.pop_ptr), tx_ringbuffer.end - tx_ringbuffer.pop_ptr + 1 );
