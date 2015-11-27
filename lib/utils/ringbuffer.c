@@ -30,15 +30,30 @@
 
 #include "ringbuffer.h"
 
+/**
+ * simple ringbuffer handling that support putc/getc/is_full/is_empty functionality
+ * may further be optmized by using 2'er complement masking instead of checking wraparound
+ * conditions using if's (but the improvement is minimal).
+ *
+ * Example usage:
+ *
+ * uint8_t tx_buffer[256];
+ * uint8_t* buf;
+ * ringbuffer_t tx_ringbuffer;
+ *
+ * // initialize buffer first using "ringbuffer_init"
+ * ringbuffer_init(&tx_ringbuffer, tx_buffer, sizeof(tx_buffer));
+ * ringbuffer_putc(&tx_ringbuffer, "H")
+ * ringbuffer_putc(&tx_ringbuffer, "i")
+ * ringbuffer_getc(&tx_ringbuffer, buf);
+ * ...
+ */
+
 void ringbuffer_init(ringbuffer_t* rbuffer, uint8_t* user_data, uint16_t len) {
     rbuffer->start = rbuffer->push_ptr = rbuffer->pop_ptr = user_data;
     rbuffer->sizeof_data = len;
     rbuffer->end = rbuffer->start + len - 1;
 }
-
-// inline bool ringbuffer_is_empty(ringbuffer_t* rbuffer) {
-//     return (rbuffer->push_ptr == rbuffer->pop_ptr);
-// }
 
 bool ringbuffer_is_full(ringbuffer_t* rbuffer) {
     return !ringbuffer_get_free_mem(rbuffer);
