@@ -326,28 +326,32 @@ void CDC_send_packet(void) {
     USBD_CDC_TransmitPacket(&hUSBDDevice);
 
 }
-// timout in milliseconds.
-// Returns number of bytes read from the device.
+/**
+  * @brief  USBD_CDC_Rx
+  *         reads ::len number of bytes from the rx ringbuffer to the ::buf data pointer
+  *         with a ::timout option in msec. returns the number of bytes returned from the
+  *         ringbuffer
+  */
 int USBD_CDC_Rx(uint8_t *buf, uint32_t len, uint32_t timeout) {
-    uint32_t start;
-    uint32_t i=0;
-    uint8_t *end = buf+len;
-    for (; buf<end; buf++) {
+    uint32_t i;
+    for (i=0; i<len; i++) {
         // Wait until we have at least 1 byte to read
-        if (ringbuffer_is_empty(&rx_ringbuffer)) {
+        if (!ringbuffer_getc(&rx_ringbuffer, buf++)) {
+            // buffer is empty, wait
+            uint32_t start;
             if (query_irq() == IRQ_STATE_DISABLED) {
                 return i;
             }
             start = HAL_GetTick();
             while (ringbuffer_is_empty(&rx_ringbuffer)) {
                 if (HAL_GetTick() - start <= timeout) {
+                    // timeout - return the nr of bytes read so far
                     return i;
                 }
+                // sleep
                 __WFI();
             }
         }
-        *buf = ringbuffer_getc(&rx_ringbuffer);
-        i++;
     }
     // Success, return number of bytes read
     return i;

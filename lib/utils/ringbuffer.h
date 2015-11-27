@@ -3,7 +3,7 @@
  *
  * The MIT License (MIT)
  *
- * Copyright (c) 2013, 2014 Damien P. George
+ * Copyright (c) 2015 Martin Fischer
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -39,10 +39,12 @@ typedef struct {
 } ringbuffer_t;
 
 void ringbuffer_init(ringbuffer_t* rbuffer, uint8_t* user_data, uint16_t length);
-bool ringbuffer_is_empty(ringbuffer_t* rbuffer);
+inline bool ringbuffer_is_empty(ringbuffer_t* rbuffer) {
+    return (rbuffer->push_ptr == rbuffer->pop_ptr);
+}
 bool ringbuffer_is_full(ringbuffer_t* rbuffer);
 bool ringbuffer_putc(ringbuffer_t* rbuffer, uint8_t character);
-uint8_t ringbuffer_getc(ringbuffer_t* rbuffer);
+bool ringbuffer_getc(ringbuffer_t* rbuffer, uint8_t* ch);
 uint16_t ringbuffer_get_used_mem(ringbuffer_t* rbuffer);
 uint16_t ringbuffer_get_free_mem(ringbuffer_t* rbuffer);
 

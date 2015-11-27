@@ -3,7 +3,7 @@
  *
  * The MIT License (MIT)
  *
- * Copyright (c) 2013, 2014 Damien P. George
+ * Copyright (c) 2015 Martin Fischer
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -36,9 +36,9 @@ void ringbuffer_init(ringbuffer_t* rbuffer, uint8_t* user_data, uint16_t len) {
     rbuffer->end = rbuffer->start + len - 1;
 }
 
-bool ringbuffer_is_empty(ringbuffer_t* rbuffer) {
-    return (rbuffer->push_ptr == rbuffer->pop_ptr);
-}
+// inline bool ringbuffer_is_empty(ringbuffer_t* rbuffer) {
+//     return (rbuffer->push_ptr == rbuffer->pop_ptr);
+// }
 
 bool ringbuffer_is_full(ringbuffer_t* rbuffer) {
     return !ringbuffer_get_free_mem(rbuffer);
@@ -73,18 +73,21 @@ bool ringbuffer_putc(ringbuffer_t* rbuffer, uint8_t character) {
         if (rbuffer->pop_ptr  > rbuffer->end ) {
             rbuffer->pop_ptr = rbuffer->start;
         }
+        // signal overwrite
         return false;
     }
     return true;
 }
 
-uint8_t ringbuffer_getc(ringbuffer_t* rbuffer) {
-    uint8_t c;
-    c = *(rbuffer->pop_ptr);
+bool ringbuffer_getc(ringbuffer_t* rbuffer, uint8_t* ch) {
+    if (ringbuffer_is_empty(rbuffer)) {
+        return false;
+    }
+    *ch = *(rbuffer->pop_ptr);
     rbuffer->pop_ptr++;
     if (rbuffer->pop_ptr  > rbuffer->end ) {
         // wraparound
         rbuffer->pop_ptr = rbuffer->start;
     }
-    return c;
+    return true;
 }
