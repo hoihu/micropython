@@ -45,7 +45,7 @@
 #include "irq.h"
 #include "timer.h"
 #include "usb.h"
-#include "lib/libc/ringbuffer.h"
+#include "lib/utils/ringbuffer.h"
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/

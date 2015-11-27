@@ -75,7 +75,6 @@ endif
 
 SRC_LIB = $(addprefix lib/,\
 	libc/string0.c \
-	libc/ringbuffer.c \
 	libm/math.c \
 	libm/asinfacosf.c \
 	libm/atanf.c \
@@ -106,6 +105,7 @@ SRC_LIB = $(addprefix lib/,\
 	mp-readline/readline.c \
 	netutils/netutils.c \
 	timeutils/timeutils.c \
+	utils/ringbuffer.c \
 	utils/pyexec.c \
 	utils/printf.c \
 	)
