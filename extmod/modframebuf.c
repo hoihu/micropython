@@ -38,7 +38,7 @@ typedef struct _mp_obj_framebuf_t {
     mp_obj_t buf_obj; // need to store this to prevent GC from reclaiming buf
     void *buf;
     uint16_t width, height, stride;
-    uint8_t format;
+    uint8_t format, pixel_size;
 } mp_obj_framebuf_t;
 
 typedef void (*setpixel_t)(const mp_obj_framebuf_t*, int, int, uint32_t);
@@ -59,6 +59,7 @@ typedef struct _mp_framebuf_p_t {
 #define FRAMEBUF_GS8      (6)
 #define FRAMEBUF_MHLSB    (3)
 #define FRAMEBUF_MHMSB    (4)
+#define FRAMEBUF_RGB888   (7)
 
 // Functions for MHLSB and MHMSB
 
@@ -112,23 +113,23 @@ STATIC void mvlsb_fill_rect(const mp_obj_framebuf_t *fb, int x, int y, int w, in
     }
 }
 
-// Functions for RGB565 format
+// Functions for multibyte color formats (GS8, RGB565, RGB888)
 
-STATIC void rgb565_setpixel(const mp_obj_framebuf_t *fb, int x, int y, uint32_t col) {
-    ((uint16_t*)fb->buf)[x + y * fb->stride] = col;
+STATIC void rgb888_setpixel(const mp_obj_framebuf_t *fb, int x, int y, uint32_t col) {
+    memcpy(&((uint8_t*)fb->buf)[fb->pixel_size * x + y * fb->stride], &col, fb->pixel_size);
 }
 
-STATIC uint32_t rgb565_getpixel(const mp_obj_framebuf_t *fb, int x, int y) {
-    return ((uint16_t*)fb->buf)[x + y * fb->stride];
+STATIC uint32_t rgb888_getpixel(const mp_obj_framebuf_t *fb, int x, int y) {
+    uint32_t col;
+    memcpy(&col, &((uint8_t*)fb->buf)[fb->pixel_size * x + y * fb->stride], fb->pixel_size);
+    return col;
 }
 
-STATIC void rgb565_fill_rect(const mp_obj_framebuf_t *fb, int x, int y, int w, int h, uint32_t col) {
-    uint16_t *b = &((uint16_t*)fb->buf)[x + y * fb->stride];
-    while (h--) {
-        for (int ww = w; ww; --ww) {
-            *b++ = col;
+STATIC void rgb888_fill_rect(const mp_obj_framebuf_t *fb, int x, int y, int w, int h, uint32_t col) {
+    for (int xx=x; xx < x+w; xx++) {
+        for (int yy=y; yy < y+h; yy++) {
+            rgb888_setpixel(fb, xx, yy, col);
         }
-        b += fb->stride - w;
     }
 }
 
@@ -207,33 +208,15 @@ STATIC void gs4_hmsb_fill_rect(const mp_obj_framebuf_t *fb, int x, int y, int w,
     }
 }
 
-// Functions for GS8 format
-
-STATIC void gs8_setpixel(const mp_obj_framebuf_t *fb, int x, int y, uint32_t col) {
-    uint8_t *pixel = &((uint8_t*)fb->buf)[(x + y * fb->stride)];
-    *pixel = col & 0xff;
-}
-
-STATIC uint32_t gs8_getpixel(const mp_obj_framebuf_t *fb, int x, int y) {
-    return ((uint8_t*)fb->buf)[(x + y * fb->stride)];
-}
-
-STATIC void gs8_fill_rect(const mp_obj_framebuf_t *fb, int x, int y, int w, int h, uint32_t col) {
-    uint8_t *pixel = &((uint8_t*)fb->buf)[(x + y * fb->stride)];
-    while (h--) {
-        memset(pixel, col, w);
-        pixel += fb->stride;
-    }
-}
-
 STATIC mp_framebuf_p_t formats[] = {
     [FRAMEBUF_MVLSB] = {mvlsb_setpixel, mvlsb_getpixel, mvlsb_fill_rect},
-    [FRAMEBUF_RGB565] = {rgb565_setpixel, rgb565_getpixel, rgb565_fill_rect},
+    [FRAMEBUF_RGB565] = {rgb888_setpixel, rgb888_getpixel, rgb888_fill_rect},
     [FRAMEBUF_GS2_HMSB] = {gs2_hmsb_setpixel, gs2_hmsb_getpixel, gs2_hmsb_fill_rect},
     [FRAMEBUF_GS4_HMSB] = {gs4_hmsb_setpixel, gs4_hmsb_getpixel, gs4_hmsb_fill_rect},
-    [FRAMEBUF_GS8] = {gs8_setpixel, gs8_getpixel, gs8_fill_rect},
+    [FRAMEBUF_GS8] = {rgb888_setpixel, rgb888_getpixel, rgb888_fill_rect},
     [FRAMEBUF_MHLSB] = {mono_horiz_setpixel, mono_horiz_getpixel, mono_horiz_fill_rect},
     [FRAMEBUF_MHMSB] = {mono_horiz_setpixel, mono_horiz_getpixel, mono_horiz_fill_rect},
+    [FRAMEBUF_RGB888] = {rgb888_setpixel, rgb888_getpixel, rgb888_fill_rect},
 };
 
 static inline void setpixel(const mp_obj_framebuf_t *fb, int x, int y, uint32_t col) {
@@ -278,10 +261,10 @@ STATIC mp_obj_t framebuf_make_new(const mp_obj_type_t *type, size_t n_args, size
     } else {
         o->stride = o->width;
     }
-
+    o->pixel_size = 1;
     switch (o->format) {
         case FRAMEBUF_MVLSB:
-        case FRAMEBUF_RGB565:
+        case FRAMEBUF_GS8:
             break;
         case FRAMEBUF_MHLSB:
         case FRAMEBUF_MHMSB:
@@ -293,12 +276,17 @@ STATIC mp_obj_t framebuf_make_new(const mp_obj_type_t *type, size_t n_args, size
         case FRAMEBUF_GS4_HMSB:
             o->stride = (o->stride + 1) & ~1;
             break;
-        case FRAMEBUF_GS8:
+        case FRAMEBUF_RGB565:
+            o->pixel_size = 2;
+            o->stride = o->pixel_size * o->width;
+            break;
+        case FRAMEBUF_RGB888:
+            o->pixel_size = 3;
+            o->stride = o->pixel_size * o->width;
             break;
         default:
             mp_raise_ValueError("invalid format");
     }
-
     return MP_OBJ_FROM_PTR(o);
 }
 
@@ -306,7 +294,7 @@ STATIC mp_int_t framebuf_get_buffer(mp_obj_t self_in, mp_buffer_info_t *bufinfo,
     (void)flags;
     mp_obj_framebuf_t *self = MP_OBJ_TO_PTR(self_in);
     bufinfo->buf = self->buf;
-    bufinfo->len = self->stride * self->height * (self->format == FRAMEBUF_RGB565 ? 2 : 1);
+    bufinfo->len = self->stride * self->height;
     bufinfo->typecode = 'B'; // view framebuf as bytes
     return 0;
 }
@@ -636,6 +624,7 @@ STATIC const mp_rom_map_elem_t framebuf_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_GS8), MP_ROM_INT(FRAMEBUF_GS8) },
     { MP_ROM_QSTR(MP_QSTR_MONO_HLSB), MP_ROM_INT(FRAMEBUF_MHLSB) },
     { MP_ROM_QSTR(MP_QSTR_MONO_HMSB), MP_ROM_INT(FRAMEBUF_MHMSB) },
+    { MP_ROM_QSTR(MP_QSTR_RGB888), MP_ROM_INT(FRAMEBUF_RGB888) },
 };
 
 STATIC MP_DEFINE_CONST_DICT(framebuf_module_globals, framebuf_module_globals_table);
