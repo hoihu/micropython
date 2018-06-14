@@ -218,7 +218,8 @@ void HAL_PCD_SOFCallback(PCD_HandleTypeDef *hpcd) {
 
 // Data received over USB OUT endpoint is processed here.
 // len: number of bytes received into the buffer we passed to USBD_CDC_ReceivePacket
-// Returns USBD_OK if all operations are OK else USBD_FAIL
+// Returns USBD_OK if all operations are OK 
+// Returns USBD_BUSY if buffer is full or about to be full
 int8_t usbd_cdc_receive(usbd_cdc_state_t *cdc_in, size_t len) {
     usbd_cdc_itf_t *cdc = (usbd_cdc_itf_t*)cdc_in;
 
@@ -229,12 +230,18 @@ int8_t usbd_cdc_receive(usbd_cdc_state_t *cdc_in, size_t len) {
         } else {
             uint16_t next_put = (cdc->rx_buf_put + 1) & (USBD_CDC_RX_DATA_SIZE - 1);
             if (next_put == cdc->rx_buf_get) {
-                // overflow, we just discard the rest of the chars
                 break;
             }
             cdc->rx_user_buf[cdc->rx_buf_put] = *src;
             cdc->rx_buf_put = next_put;
         }
+    }
+    // check if there is enough space to receive a next packet with a worst case of 64 bytes.
+    // if not it will NAK the next packet until the ringbuffer is drained by the application.
+    // the intention is to enables flow control by using USB low level functions.
+    // see https://community.st.com/thread/24523
+    if (((cdc->rx_buf_put - cdc->rx_buf_get) & (USBD_CDC_RX_DATA_SIZE - 1)) > (USBD_CDC_RX_DATA_SIZE - 64)) {
+        return USBD_BUSY;
     }
 
     // initiate next USB packet transfer
