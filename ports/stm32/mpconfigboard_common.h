@@ -299,7 +299,7 @@
 
 // Configure maximum number of CDC VCP interfaces, and whether MSC/HID are supported
 #ifndef MICROPY_HW_USB_CDC_NUM
-#define MICROPY_HW_USB_CDC_NUM (1)
+#define MICROPY_HW_USB_CDC_NUM (2)
 #endif
 #ifndef MICROPY_HW_USB_MSC
 #define MICROPY_HW_USB_MSC (MICROPY_HW_ENABLE_USB)
