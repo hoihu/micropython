@@ -70,6 +70,7 @@ $(OBJ): | $(HEADER_BUILD)/qstrdefs.generated.h $(HEADER_BUILD)/mpversion.h
 # - if anything in QSTR_GLOBAL_DEPENDENCIES is newer, then process all source files ($^)
 # - else, if list of newer prerequisites ($?) is not empty, then process just these ($?)
 # - else, process all source files ($^) [this covers "make -B" which can set $? to empty]
+# See more information about this process in docs/develop/qstr.rst.
 $(HEADER_BUILD)/qstr.i.last: $(SRC_QSTR) $(QSTR_GLOBAL_DEPENDENCIES) | $(QSTR_GLOBAL_REQUIREMENTS)
 	$(ECHO) "GEN $@"
 	$(Q)$(CPP) $(QSTR_GEN_EXTRA_CFLAGS) $(CFLAGS) $(if $(filter $?,$(QSTR_GLOBAL_DEPENDENCIES)),$^,$(if $?,$?,$^)) >$(HEADER_BUILD)/qstr.i.last
@@ -95,6 +96,12 @@ $(OBJ_DIRS):
 
 $(HEADER_BUILD):
 	$(MKDIR) -p $@
+
+ifneq ($(FROZEN_MANIFEST),)
+# to build frozen_content.c from a manifest
+$(BUILD)/frozen_content.c: FORCE $(BUILD)/genhdr/qstrdefs.generated.h
+	$(Q)$(MAKE_MANIFEST) -o $@ $(TOP) $(BUILD) "$(MPY_CROSS_FLAGS)" $(FROZEN_MANIFEST)
+endif
 
 ifneq ($(FROZEN_DIR),)
 $(BUILD)/frozen.c: $(wildcard $(FROZEN_DIR)/*) $(HEADER_BUILD) $(FROZEN_EXTRA_DEPS)
@@ -141,6 +148,13 @@ clean-prog:
 
 .PHONY: clean-prog
 endif
+
+submodules:
+	$(ECHO) "Updating submodules: $(GIT_SUBMODULES)"
+ifneq ($(GIT_SUBMODULES),)
+	$(Q)git submodule update --init $(addprefix $(TOP)/,$(GIT_SUBMODULES))
+endif
+.PHONY: submodules
 
 LIBMICROPYTHON = libmicropython.a
 
