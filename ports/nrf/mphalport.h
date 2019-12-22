@@ -41,11 +41,17 @@ typedef enum
   HAL_TIMEOUT  = 0x03
 } HAL_StatusTypeDef;
 
-static inline uint32_t hal_tick_fake(void) {
-    return 0;
-}
+#if MICROPY_PY_SYSTICK
+extern uint32_t systick_cnt;
 
-#define mp_hal_ticks_ms hal_tick_fake // TODO: implement. Right now, return 0 always
+static inline mp_uint_t mp_hal_ticks_ms(void) {
+  return (mp_uint_t)systick_cnt;
+}
+#else
+static inline mp_uint_t mp_hal_ticks_ms(void) {
+  return 0;
+}
+#endif
 
 extern const unsigned char mp_hal_status_to_errno_table[4];
 

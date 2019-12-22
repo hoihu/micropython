@@ -74,6 +74,16 @@
 #include "usb_cdc.h"
 #endif
 
+#if MICROPY_PY_SYSTICK
+#include "nrfx_systick.h"
+uint32_t systick_cnt;
+// increment systick_cntr in 1msec intervals
+// overflows app. every 50 days
+void SysTick_Handler(void) {
+    systick_cnt++;
+}
+#endif 
+
 void do_str(const char *src, mp_parse_input_kind_t input_kind) {
     mp_lexer_t *lex = mp_lexer_new_from_str_len(MP_QSTR__lt_stdin_gt_, src, strlen(src), 0);
     if (lex == NULL) {
@@ -123,6 +133,10 @@ soft_reset:
 
     readline_init0();
 
+#if MICROPY_PY_SYSTICK
+    // configure systick for 1msec irq interval
+    SysTick_Config(64000);
+#endif
 
 #if MICROPY_PY_MACHINE_HW_SPI
     spi_init0();
