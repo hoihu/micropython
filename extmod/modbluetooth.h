@@ -47,6 +47,12 @@
 #define MICROPY_PY_BLUETOOTH_GATTS_ON_READ_CALLBACK (0)
 #endif
 
+// This is used to protect the ringbuffer.
+#ifndef MICROPY_PY_BLUETOOTH_ENTER
+#define MICROPY_PY_BLUETOOTH_ENTER mp_uint_t atomic_state = MICROPY_BEGIN_ATOMIC_SECTION();
+#define MICROPY_PY_BLUETOOTH_EXIT MICROPY_END_ATOMIC_SECTION(atomic_state);
+#endif
+
 // Common constants.
 #ifndef MP_BLUETOOTH_MAX_ATTR_SIZE
 #define MP_BLUETOOTH_MAX_ATTR_SIZE (20)
@@ -58,6 +64,10 @@
 #define MP_BLUETOOTH_CHARACTERISTIC_FLAG_READ     (1 << 1)
 #define MP_BLUETOOTH_CHARACTERISTIC_FLAG_WRITE    (1 << 3)
 #define MP_BLUETOOTH_CHARACTERISTIC_FLAG_NOTIFY   (1 << 4)
+
+// For mp_bluetooth_gattc_write, the mode parameter
+#define MP_BLUETOOTH_WRITE_MODE_NO_RESPONSE     (0)
+#define MP_BLUETOOTH_WRITE_MODE_WITH_RESPONSE   (1)
 
 // Type value also doubles as length.
 #define MP_BLUETOOTH_UUID_TYPE_16  (2)
@@ -120,14 +130,14 @@ _IRQ_ALL                             = const(0xffff)
 
 // Common UUID type.
 // Ports are expected to map this to their own internal UUID types.
+// Internally the UUID data is little-endian, but the user should only
+// ever see this if they use the buffer protocol, e.g. in order to
+// construct an advertising payload (which needs to be in LE).
+// Both the constructor and the print function work in BE.
 typedef struct {
     mp_obj_base_t base;
     uint8_t type;
-    union {
-        uint16_t _16;
-        uint32_t _32;
-        uint8_t _128[16];
-    } uuid;
+    uint8_t data[16];
 } mp_obj_bluetooth_uuid_t;
 
 //////////////////////////////////////////////////////////////
@@ -140,8 +150,10 @@ typedef struct {
 // Any method returning an int returns errno on failure, otherwise zero.
 
 // Note: All methods dealing with addresses (as 6-byte uint8 pointers) are in big-endian format.
-// (i.e. the same way they would be printed on a device sticker or in a UI).
-// This means that the lower level implementation might need to reorder them (e.g. Nimble works in little-endian)
+// (i.e. the same way they would be printed on a device sticker or in a UI), so the user sees
+// addresses in a way that looks like what they'd expect.
+// This means that the lower level implementation will likely need to reorder them (e.g. Nimble
+// works in little-endian, as does BLE itself).
 
 // Enables the Bluetooth stack.
 int mp_bluetooth_init(void);
@@ -163,7 +175,7 @@ int mp_bluetooth_gap_advertise_start(bool connectable, int32_t interval_us, cons
 void mp_bluetooth_gap_advertise_stop(void);
 
 // Start adding services. Must be called before mp_bluetooth_register_service.
-int mp_bluetooth_gatts_register_service_begin(bool reset);
+int mp_bluetooth_gatts_register_service_begin(bool append);
 // // Add a service with the given list of characteristics to the queue to be registered.
 // The value_handles won't be valid until after mp_bluetooth_register_service_end is called.
 int mp_bluetooth_gatts_register_service(mp_obj_bluetooth_uuid_t *service_uuid, mp_obj_bluetooth_uuid_t **characteristic_uuids, uint8_t *characteristic_flags, mp_obj_bluetooth_uuid_t **descriptor_uuids, uint8_t *descriptor_flags, uint8_t *num_descriptors, uint16_t *handles, size_t num_characteristics);
@@ -180,6 +192,10 @@ int mp_bluetooth_gatts_notify(uint16_t conn_handle, uint16_t value_handle);
 int mp_bluetooth_gatts_notify_send(uint16_t conn_handle, uint16_t value_handle, const uint8_t *value, size_t *value_len);
 // Indicate the central.
 int mp_bluetooth_gatts_indicate(uint16_t conn_handle, uint16_t value_handle);
+
+// Resize and enable/disable append-mode on a value.
+// Append-mode means that remote writes will append and local reads will clear after reading.
+int mp_bluetooth_gatts_set_buffer(uint16_t value_handle, size_t len, bool append);
 
 // Disconnect from a central or peripheral.
 int mp_bluetooth_gap_disconnect(uint16_t conn_handle);
@@ -207,7 +223,7 @@ int mp_bluetooth_gattc_discover_descriptors(uint16_t conn_handle, uint16_t start
 int mp_bluetooth_gattc_read(uint16_t conn_handle, uint16_t value_handle);
 
 // Write the value to the remote peripheral.
-int mp_bluetooth_gattc_write(uint16_t conn_handle, uint16_t value_handle, const uint8_t *value, size_t *value_len);
+int mp_bluetooth_gattc_write(uint16_t conn_handle, uint16_t value_handle, const uint8_t *value, size_t *value_len, unsigned int mode);
 #endif
 
 /////////////////////////////////////////////////////////////////////////////
@@ -241,7 +257,11 @@ void mp_bluetooth_gattc_on_characteristic_result(uint16_t conn_handle, uint16_t 
 void mp_bluetooth_gattc_on_descriptor_result(uint16_t conn_handle, uint16_t handle, mp_obj_bluetooth_uuid_t *descriptor_uuid);
 
 // Notify modbluetooth that a read has completed with data (or notify/indicate data available, use `event` to disambiguate).
-void mp_bluetooth_gattc_on_data_available(uint16_t event, uint16_t conn_handle, uint16_t value_handle, const uint8_t *data, size_t data_len);
+// Note: these functions are to be called in a group protected by MICROPY_PY_BLUETOOTH_ENTER/EXIT.
+// _start returns the number of bytes to submit to the calls to _chunk, followed by a call to _end.
+size_t mp_bluetooth_gattc_on_data_available_start(uint16_t event, uint16_t conn_handle, uint16_t value_handle, size_t data_len);
+void mp_bluetooth_gattc_on_data_available_chunk(const uint8_t *data, size_t data_len);
+void mp_bluetooth_gattc_on_data_available_end(void);
 
 // Notify modbluetooth that a write has completed.
 void mp_bluetooth_gattc_on_write_status(uint16_t conn_handle, uint16_t value_handle, uint16_t status);
