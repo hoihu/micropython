@@ -58,7 +58,7 @@
 #if NRF51
 #define MICROPY_ALLOC_GC_STACK_SIZE (32)
 #endif
-
+#define MICROPY_QSTR_EXTRA_POOL             mp_qstr_frozen_const_pool
 #define MICROPY_OPT_COMPUTED_GOTO   (0)
 #define MICROPY_OPT_CACHE_MAP_LOOKUP_IN_BYTECODE (0)
 #define MICROPY_OPT_MPZ_BITWISE     (0)
@@ -176,10 +176,6 @@
 
 #ifndef MICROPY_PY_RANDOM_HW_RNG
 #define MICROPY_PY_RANDOM_HW_RNG    (0)
-#endif
-
-#ifndef MICROPY_PY_SYSTICK
-#define MICROPY_PY_SYSTICK    (0)
 #endif
 
 
