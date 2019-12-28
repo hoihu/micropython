@@ -435,7 +435,7 @@ endif
 flash: deploy
 
 $(BUILD)/$(OUTPUT_FILENAME).elf: $(OBJ)
-	$(ECHO) $(FROZEN_MANIFEST)
+	$(ECHO) "LINK $@"
 	$(Q)$(CC) $(LDFLAGS) -o $@ $(OBJ) $(LIBS)
 	$(Q)$(SIZE) $@
 
