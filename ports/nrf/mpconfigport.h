@@ -80,6 +80,14 @@
 #define mp_builtin_open_obj mp_vfs_open_obj
 #endif
 
+#define MICROPY_EVENT_POLL_HOOK \
+    do { \
+        extern void mp_handle_pending(void); \
+        mp_handle_pending(); \
+    } while (0);
+
+#define MICROPY_THREAD_YIELD()
+
 // Enable micro:bit filesystem by default.
 #ifndef MICROPY_MBFS
 #define MICROPY_MBFS (1)
@@ -104,8 +112,8 @@
 #define MICROPY_MODULE_BUILTIN_INIT (1)
 #define MICROPY_PY_ALL_SPECIAL_METHODS (0)
 #define MICROPY_PY_MICROPYTHON_MEM_INFO (1)
-#define MICROPY_PY_ARRAY_SLICE_ASSIGN (0)
-#define MICROPY_PY_BUILTINS_SLICE_ATTRS (0)
+#define MICROPY_PY_ARRAY_SLICE_ASSIGN (1)
+#define MICROPY_PY_BUILTINS_SLICE_ATTRS (1)
 #define MICROPY_PY_SYS_EXIT         (1)
 #define MICROPY_PY_SYS_MAXSIZE      (1)
 #define MICROPY_PY_SYS_STDFILES     (0)
@@ -113,15 +121,15 @@
 #define MICROPY_PY_COLLECTIONS_ORDEREDDICT (0)
 #define MICROPY_PY_MATH_SPECIAL_FUNCTIONS (0)
 #define MICROPY_PY_CMATH            (0)
-#define MICROPY_PY_IO               (0)
+#define MICROPY_PY_IO               (1)
 #define MICROPY_PY_IO_FILEIO        (0)
 #define MICROPY_PY_UERRNO           (0)
-#define MICROPY_PY_UBINASCII        (0)
+#define MICROPY_PY_UBINASCII        (1)
 #define MICROPY_PY_URANDOM          (0)
 #define MICROPY_PY_URANDOM_EXTRA_FUNCS (0)
 #define MICROPY_PY_UCTYPES          (0)
 #define MICROPY_PY_UZLIB            (0)
-#define MICROPY_PY_UJSON            (0)
+#define MICROPY_PY_UJSON            (1)
 #define MICROPY_PY_URE              (0)
 #define MICROPY_PY_UHEAPQ           (0)
 #define MICROPY_PY_UHASHLIB         (0)
@@ -132,6 +140,8 @@
 #define MICROPY_PY_MACHINE_SPI      (0)
 #define MICROPY_PY_MACHINE_SPI_MIN_DELAY (0)
 #define MICROPY_PY_FRAMEBUF         (0)
+#define MICROPY_PY_USELECT          (1)
+#define MICROPY_PY_UTIMEQ           (1)
 
 #ifndef MICROPY_HW_LED_COUNT
 #define MICROPY_HW_LED_COUNT        (0)

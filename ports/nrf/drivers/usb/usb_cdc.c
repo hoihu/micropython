@@ -34,6 +34,7 @@
 #include "nrfx_power.h"
 #include "nrfx_uart.h"
 #include "py/ringbuf.h"
+#include "lib/utils/interrupt_char.h"
 
 #ifdef BLUETOOTH_SD
 #include "nrf_sdm.h"
@@ -118,15 +119,20 @@ static int cdc_tx_char(void) {
     return ringbuf_get((ringbuf_t*)&tx_ringbuf);
 }
 
+
 static void cdc_task(void)
 {
     if ( tud_cdc_connected() ) {
         // connected and there are data available
+        uint8_t c;
         while (tud_cdc_available()) {
-            int c;
-            uint32_t count = tud_cdc_read(&c, 1);
-            (void)count;
-            ringbuf_put((ringbuf_t*)&rx_ringbuf, c);
+            c = tud_cdc_read_char();
+            if (mp_interrupt_char != -1 && c == mp_interrupt_char) {
+                mp_keyboard_interrupt();
+                tud_cdc_read_flush();
+            } else {
+                ringbuf_put((ringbuf_t*)&rx_ringbuf, c);
+            }
         }
 
         int chars = 0;

@@ -1,0 +1,2 @@
+# uasyncio
+freeze('.', 'uasyncio.py')

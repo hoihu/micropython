@@ -133,9 +133,7 @@ class SingletonGenerator:
 # Pause task execution for the given time (integer in milliseconds, uPy extension)
 # Use a SingletonGenerator to do it without allocating on the heap
 def sleep_ms(t, sgen=SingletonGenerator()):
-    print("HALLO")
     _queue.push_sorted(cur_task, ticks_add(ticks(), t))
-    print("duda")
     sgen.state = 1
     return sgen
 
