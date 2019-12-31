@@ -33,6 +33,7 @@
 #include "nrf_gpio.h"
 #include "nrfx_config.h"
 
+
 typedef enum
 {
   HAL_OK       = 0x00,
@@ -41,18 +42,8 @@ typedef enum
   HAL_TIMEOUT  = 0x03
 } HAL_StatusTypeDef;
 
-#if MICROPY_PY_SYSTICK
-extern uint32_t systick_cnt;
 
-static inline mp_uint_t mp_hal_ticks_ms(void) {
-  return (mp_uint_t)systick_cnt;
-}
-#else
-static inline mp_uint_t mp_hal_ticks_ms(void) {
-  return 0;
-}
-#endif
-
+void rtc1_init_msec(void);
 extern const unsigned char mp_hal_status_to_errno_table[4];
 
 NORETURN void mp_hal_raise(HAL_StatusTypeDef status);

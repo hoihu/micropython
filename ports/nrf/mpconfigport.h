@@ -187,8 +187,8 @@
 #define MICROPY_PY_RANDOM_HW_RNG    (0)
 #endif
 
-#ifndef MICROPY_PY_SYSTICK
-#define MICROPY_PY_SYSTICK    (0)
+#ifndef MICROPY_PY_TIME_TICKS
+#define MICROPY_PY_TIME_TICKS    (0)
 #endif
 
 
