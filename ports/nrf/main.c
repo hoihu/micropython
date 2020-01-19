@@ -125,9 +125,7 @@ soft_reset:
 
     readline_init0();
 
-#if MICROPY_PY_TIME_TICKS
-    rtc1_init_msec();
-#endif
+
 
 #if MICROPY_PY_MACHINE_HW_SPI
     spi_init0();
@@ -152,6 +150,8 @@ soft_reset:
 #if MICROPY_PY_MACHINE_TIMER
     timer_init0();
 #endif
+
+
 
 #if MICROPY_PY_MACHINE_UART
     uart_init0();
@@ -229,6 +229,7 @@ pin_init0();
 #if MICROPY_PY_MACHINE_SOFT_PWM
     ticker_start();
     pwm_start();
+    rtc1_init_msec();
 #endif
 
 led_state(1, 0);

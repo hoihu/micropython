@@ -34,18 +34,26 @@
 #include "uart.h"
 #include "nrfx_errors.h"
 #include "nrfx_config.h"
-#include "nrfx_rtc.h"
+#include "nrfx_timer.h"
+#include "ticker.h"
 
-nrfx_rtc_t rtc1 = NRFX_RTC_INSTANCE(1);
+volatile uint32_t tick_ms;
 
-void rtc1_init_msec(void) {
-    rtc1.p_reg->PRESCALER = 32;
-    rtc1.p_reg->TASKS_START = 1;
+int32_t tick_cb(void) {
+    tick_ms += 1;
+    return 1000;
 }
 
+void rtc1_init_msec(void) {
+    set_ticker_callback(0, tick_cb, 200);
+}
+
+extern volatile uint32_t ticks;
 #if MICROPY_PY_TIME_TICKS
 mp_uint_t mp_hal_ticks_ms(void) {
-  return (mp_uint_t)rtc1.p_reg->COUNTER;
+    return ticks;
+
+    //return tick_ms;
 }
 #else
 mp_uint_t mp_hal_ticks_ms(void) {
@@ -86,7 +94,8 @@ int mp_hal_stdin_rx_chr(void) {
     for (;;) {
         if (MP_STATE_PORT(board_stdio_uart) != NULL && uart_rx_any(MP_STATE_PORT(board_stdio_uart))) {
             return uart_rx_char(MP_STATE_PORT(board_stdio_uart));
-    __WFI();
+        }
+        __WFI();
     }
 
     return 0;

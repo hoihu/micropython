@@ -104,7 +104,7 @@ void FastTicker_IRQHandler(void) {
     ticker_callback_ptr *call = callbacks;
     if (ticker->EVENTS_COMPARE[0]) {
         ticker->EVENTS_COMPARE[0] = 0;
-        ticker->CC[0] += call[0]()*MICROSECONDS_PER_TICK;
+        ticker->CC[0] += call[0]();
     }
     if (ticker->EVENTS_COMPARE[1]) {
         ticker->EVENTS_COMPARE[1] = 0;
