@@ -26,6 +26,33 @@
 #ifndef MICROPY_INCLUDED_RP2_UART_H
 #define MICROPY_INCLUDED_RP2_UART_H
 
+#include "hardware/uart.h"
+#include "py/ringbuf.h"
+
+typedef struct _machine_uart_obj_t {
+    mp_obj_base_t base;
+    uart_inst_t *const uart;
+    uint8_t uart_id;
+    uint32_t baudrate;
+    uint8_t bits;
+    bool attached_to_repl;  // whether the UART is attached to REPL
+    uart_parity_t parity;
+    uint8_t stop;
+    uint8_t tx;
+    uint8_t rx;
+    uint8_t cts;
+    uint8_t rts;
+    uint16_t timeout;       // timeout waiting for first char (in ms)
+    uint16_t timeout_char;  // timeout waiting between chars (in ms)
+    uint8_t invert;
+    uint8_t flow;
+    ringbuf_t read_buffer;
+    mutex_t *read_mutex;
+    ringbuf_t write_buffer;
+    mutex_t *write_mutex;
+} machine_uart_obj_t;
+
+void uart_attach_to_repl(machine_uart_obj_t *self, bool attached);
 void mp_uart_init(void);
 void mp_uart_write_strn(const char *str, size_t len);
 

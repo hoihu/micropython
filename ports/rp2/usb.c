@@ -59,25 +59,16 @@
 #endif
 
 // Maximum number of endpoints (excluding EP0)
-#if defined(STM32L0) || defined(STM32WB)
-#define MAX_ENDPOINT(dev_id) (7)
-#elif defined(STM32L4)
-#define MAX_ENDPOINT(dev_id) (5)
-#elif defined(STM32F4)
-#define MAX_ENDPOINT(dev_id) ((dev_id) == USB_PHY_FS_ID ? 3 : 5)
-#elif defined(STM32F7)
-#define MAX_ENDPOINT(dev_id) ((dev_id) == USB_PHY_FS_ID ? 5 : 8)
-#elif defined(STM32H7)
-#define MAX_ENDPOINT(dev_id) (8)
+#define MAX_ENDPOINT(dev_id) (15)
 #endif
 
 // Constants for USB_VCP.irq trigger.
 #define USBD_CDC_IRQ_RX (1)
 
-STATIC void pyb_usb_vcp_init0(void);
+STATIC void rp2_usb_vcp_init0(void);
 
 // this will be persistent across a soft-reset
-mp_uint_t pyb_usb_flags = 0;
+mp_uint_t rp2_usb_flags = 0;
 
 typedef struct _usb_device_t {
     uint32_t enabled;
@@ -90,7 +81,6 @@ typedef struct _usb_device_t {
 } usb_device_t;
 
 usb_device_t usb_device = {0};
-pyb_usb_storage_medium_t pyb_usb_storage_medium = PYB_USB_STORAGE_MEDIUM_NONE;
 
 #if !MICROPY_HW_USB_IS_MULTI_OTG
 
@@ -396,46 +386,75 @@ usbd_cdc_itf_t *usb_vcp_get(int idx) {
     pyb.usb_mode(..., port=2) # for second USB port
 */
 
-typedef struct _machine_usb_mode_table_t {
+typedef struct _pyb_usb_mode_table_t {
     uint8_t usbd_mode;
     uint16_t qst;
     const char *deprecated_str;
     uint16_t default_pid;
-} machine_usb_mode_table_t;
+} pyb_usb_mode_table_t;
 
 // These are all the modes supported by USBD_SelectMode.
 // Note: there are some names (eg CDC, VCP+VCP) which are supported for backwards compatibility.
-STATIC const machine_usb_mode_table_t machine_usb_mode_table[] = {
-    // TODO, add HID modes here 
-    { USBD_MODE_CDC, MP_QSTR_VCP, "CDC", MICROPY_HW_USB_PID_CDC }
+STATIC const pyb_usb_mode_table_t pyb_usb_mode_table[] = {
+    { USBD_MODE_CDC, MP_QSTR_VCP, "CDC", MICROPY_HW_USB_PID_CDC },
+    { USBD_MODE_MSC, MP_QSTR_MSC, NULL, MICROPY_HW_USB_PID_MSC },
+    { USBD_MODE_CDC_MSC, MP_QSTR_VCP_plus_MSC, "CDC+MSC", MICROPY_HW_USB_PID_CDC_MSC },
+    { USBD_MODE_CDC_HID, MP_QSTR_VCP_plus_HID, "CDC+HID", MICROPY_HW_USB_PID_CDC_HID },
+    { USBD_MODE_CDC_MSC_HID, MP_QSTR_VCP_plus_MSC_plus_HID, NULL, MICROPY_HW_USB_PID_CDC_MSC_HID },
+
+    #if MICROPY_HW_USB_CDC_NUM >= 2
+    { USBD_MODE_CDC2, MP_QSTR_2xVCP, "VCP+VCP", MICROPY_HW_USB_PID_CDC2 },
+    { USBD_MODE_CDC2_MSC, MP_QSTR_2xVCP_plus_MSC, "VCP+VCP+MSC", MICROPY_HW_USB_PID_CDC2_MSC },
+    { USBD_MODE_CDC2_MSC_HID, MP_QSTR_2xVCP_plus_MSC_plus_HID, NULL, MICROPY_HW_USB_PID_CDC2_MSC_HID },
+    #endif
+
+    #if MICROPY_HW_USB_CDC_NUM >= 3
+    { USBD_MODE_CDC3, MP_QSTR_3xVCP, NULL, MICROPY_HW_USB_PID_CDC3 },
+    { USBD_MODE_CDC3_MSC, MP_QSTR_3xVCP_plus_MSC, NULL, MICROPY_HW_USB_PID_CDC3_MSC },
+    { USBD_MODE_CDC3_MSC_HID, MP_QSTR_3xVCP_plus_MSC_plus_HID, NULL, MICROPY_HW_USB_PID_CDC3_MSC_HID },
+    #endif
 };
 
-STATIC mp_obj_t machine_usb_mode(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+STATIC mp_obj_t pyb_usb_mode(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum {
-        ARG_mode, ARG_port, ARG_vid, ARG_pid
+        ARG_mode, ARG_port, ARG_vid, ARG_pid,
+        #if MICROPY_HW_USB_MSC
+        ARG_msc,
+        #endif
+        #if MICROPY_HW_USB_HID
+        ARG_hid,
+        #endif
+        #if USBD_SUPPORT_HS_MODE
+        ARG_high_speed
+        #endif
     };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_mode, MP_ARG_REQUIRED | MP_ARG_OBJ, {.u_rom_obj = MP_ROM_NONE} },
         { MP_QSTR_port, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = -1} },
         { MP_QSTR_vid, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = MICROPY_HW_USB_VID} },
         { MP_QSTR_pid, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = -1} },
+        #if MICROPY_HW_USB_MSC
+        { MP_QSTR_msc, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_rom_obj = MP_ROM_PTR(&mp_const_empty_tuple_obj)} },
+        #endif
+        #if MICROPY_HW_USB_HID
+        { MP_QSTR_hid, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_rom_obj = MP_ROM_PTR(&pyb_usb_hid_mouse_obj)} },
+        #endif
+        #if USBD_SUPPORT_HS_MODE
+        { MP_QSTR_high_speed, MP_ARG_KW_ONLY | MP_ARG_BOOL, {.u_bool = false} },
+        #endif
     };
 
     // fetch the current usb mode -> pyb.usb_mode()
-    // if (n_args == 0) {
-    //     #if defined(USE_HOST_MODE)
-    //     return MP_OBJ_NEW_QSTR(MP_QSTR_host);
-    //     #else
-    //     uint8_t mode = USBD_GetMode(&usb_device.usbd_cdc_msc_hid_state) & USBD_MODE_IFACE_MASK;
-    //     for (size_t i = 0; i < MP_ARRAY_SIZE(pyb_usb_mode_table); ++i) {
-    //         const pyb_usb_mode_table_t *m = &pyb_usb_mode_table[i];
-    //         if (mode == m->usbd_mode) {
-    //             return MP_OBJ_NEW_QSTR(m->qst);
-    //         }
-    //     }
-    //     return mp_const_none;
-    //     #endif
-    // }
+    if (n_args == 0) {
+        uint8_t mode = USBD_GetMode(&usb_device.usbd_cdc_msc_hid_state) & USBD_MODE_IFACE_MASK;
+        for (size_t i = 0; i < MP_ARRAY_SIZE(pyb_usb_mode_table); ++i) {
+            const pyb_usb_mode_table_t *m = &pyb_usb_mode_table[i];
+            if (mode == m->usbd_mode) {
+                return MP_OBJ_NEW_QSTR(m->qst);
+            }
+        }
+        return mp_const_none;
+    }
 
     // parse args
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
@@ -453,20 +472,6 @@ STATIC mp_obj_t machine_usb_mode(size_t n_args, const mp_obj_t *pos_args, mp_map
 
     // get mode string
     const char *mode_str = mp_obj_str_get_str(args[ARG_mode].u_obj);
-
-    #if defined(USE_HOST_MODE)
-
-    // hardware configured for USB host mode
-
-    if (strcmp(mode_str, "host") == 0) {
-        pyb_usb_host_init();
-    } else {
-        goto bad_mode;
-    }
-
-    #else
-
-    // hardware configured for USB device mode
 
     // get the VID, PID and USB mode
     // note: PID=-1 means select PID based on mode
@@ -560,7 +565,7 @@ STATIC mp_obj_t machine_usb_mode(size_t n_args, const mp_obj_t *pos_args, mp_map
 bad_mode:
     mp_raise_ValueError(MP_ERROR_TEXT("bad USB mode"));
 }
-MP_DEFINE_CONST_FUN_OBJ_KW(machine_usb_mode_obj, 0, machine_usb_mode);
+MP_DEFINE_CONST_FUN_OBJ_KW(pyb_usb_mode_obj, 0, pyb_usb_mode);
 
 /******************************************************************************/
 // MicroPython bindings for USB VCP
@@ -1039,66 +1044,5 @@ const mp_obj_type_t pyb_usb_hid_type = {
 /******************************************************************************/
 // code for experimental USB OTG support
 
-#ifdef USE_HOST_MODE
-
-#include "led.h"
-#include "usbh_core.h"
-#include "usbh_usr.h"
-#include "usbh_hid_core.h"
-#include "usbh_hid_keybd.h"
-#include "usbh_hid_mouse.h"
-
-__ALIGN_BEGIN USBH_HOST USB_Host __ALIGN_END;
-
-static int host_is_enabled = 0;
-
-void pyb_usb_host_init(void) {
-    if (!host_is_enabled) {
-        // only init USBH once in the device's power-lifetime
-        /* Init Host Library */
-        USBH_Init(&USB_OTG_Core, USB_OTG_FS_CORE_ID, &USB_Host, &HID_cb, &USR_Callbacks);
-    }
-    host_is_enabled = 1;
-}
-
-void pyb_usb_host_process(void) {
-    USBH_Process(&USB_OTG_Core, &USB_Host);
-}
-
-uint8_t usb_keyboard_key = 0;
-
-// TODO this is an ugly hack to get key presses
-uint pyb_usb_host_get_keyboard(void) {
-    uint key = usb_keyboard_key;
-    usb_keyboard_key = 0;
-    return key;
-}
-
-void USR_MOUSE_Init(void) {
-    led_state(4, 1);
-    USB_OTG_BSP_mDelay(100);
-    led_state(4, 0);
-}
-
-void USR_MOUSE_ProcessData(HID_MOUSE_Data_TypeDef *data) {
-    led_state(4, 1);
-    USB_OTG_BSP_mDelay(50);
-    led_state(4, 0);
-}
-
-void USR_KEYBRD_Init(void) {
-    led_state(4, 1);
-    USB_OTG_BSP_mDelay(100);
-    led_state(4, 0);
-}
-
-void USR_KEYBRD_ProcessData(uint8_t pbuf) {
-    led_state(4, 1);
-    USB_OTG_BSP_mDelay(50);
-    led_state(4, 0);
-    usb_keyboard_key = pbuf;
-}
-
-#endif // USE_HOST_MODE
 
 #endif // MICROPY_HW_ENABLE_USB

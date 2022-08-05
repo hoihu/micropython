@@ -39,6 +39,7 @@
 #define MICROPY_HW_MCU_NAME                     "RP2040"
 #define MICROPY_HW_ENABLE_UART_REPL             (0) // useful if there is no USB
 #define MICROPY_HW_ENABLE_USBDEV                (1)
+#define MICROPY_HW_ENABLE_USB                   (1)
 
 #ifndef MICROPY_CONFIG_ROM_LEVEL
 #define MICROPY_CONFIG_ROM_LEVEL                (MICROPY_CONFIG_ROM_LEVEL_EXTRA_FEATURES)
@@ -108,6 +109,9 @@
 #define MICROPY_VFS_FAT                         (1)
 #define MICROPY_SSL_MBEDTLS                     (1)
 #define MICROPY_PY_LWIP_SOCK_RAW                (MICROPY_PY_LWIP)
+#define MICROPY_PY_OS_DUPTERM                   (3)
+#define MICROPY_PY_UOS_DUPTERM_BUILTIN_STREAM   (1)
+#define MICROPY_PY_UOS_DUPTERM_STREAM_DETACHED_ATTACHED (1)
 
 // fatfs configuration
 #define MICROPY_FATFS_ENABLE_LFN                (1)
@@ -216,6 +220,7 @@ extern const struct _mod_network_nic_type_t mod_network_nic_type_wiznet5k;
 #define MICROPY_PY_LWIP_EXIT    lwip_lock_release();
 
 #if MICROPY_HW_ENABLE_USBDEV
+#define MICROPY_HW_USB_CDC_NUM 1
 #define MICROPY_HW_USBDEV_TASK_HOOK extern void tud_task(void); tud_task();
 #define MICROPY_VM_HOOK_COUNT (10)
 #define MICROPY_VM_HOOK_INIT static uint vm_hook_divisor = MICROPY_VM_HOOK_COUNT;

@@ -102,6 +102,7 @@ set(MICROPY_SOURCE_PORT
     machine_spi.c
     machine_timer.c
     machine_uart.c
+    machine_usb.c
     machine_wdt.c
     main.c
     modmachine.c

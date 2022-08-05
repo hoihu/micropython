@@ -30,6 +30,7 @@
 #include "py/mperrno.h"
 #include "py/ringbuf.h"
 #include "modmachine.h"
+#include "uart.h"
 
 #include "hardware/irq.h"
 #include "hardware/uart.h"
@@ -83,33 +84,11 @@ auto_init_mutex(write_mutex_1);
 auto_init_mutex(read_mutex_0);
 auto_init_mutex(read_mutex_1);
 
-typedef struct _machine_uart_obj_t {
-    mp_obj_base_t base;
-    uart_inst_t *const uart;
-    uint8_t uart_id;
-    uint32_t baudrate;
-    uint8_t bits;
-    uart_parity_t parity;
-    uint8_t stop;
-    uint8_t tx;
-    uint8_t rx;
-    uint8_t cts;
-    uint8_t rts;
-    uint16_t timeout;       // timeout waiting for first char (in ms)
-    uint16_t timeout_char;  // timeout waiting between chars (in ms)
-    uint8_t invert;
-    uint8_t flow;
-    ringbuf_t read_buffer;
-    mutex_t *read_mutex;
-    ringbuf_t write_buffer;
-    mutex_t *write_mutex;
-} machine_uart_obj_t;
-
 STATIC machine_uart_obj_t machine_uart_obj[] = {
-    {{&machine_uart_type}, uart0, 0, 0, DEFAULT_UART_BITS, UART_PARITY_NONE, DEFAULT_UART_STOP,
+    {{&machine_uart_type}, uart0, 0, 0, DEFAULT_UART_BITS, true, UART_PARITY_NONE, DEFAULT_UART_STOP,
      MICROPY_HW_UART0_TX, MICROPY_HW_UART0_RX, MICROPY_HW_UART0_CTS, MICROPY_HW_UART0_RTS,
      0, 0, 0, 0, {NULL, 1, 0, 0}, &read_mutex_0, {NULL, 1, 0, 0}, &write_mutex_0},
-    {{&machine_uart_type}, uart1, 1, 0, DEFAULT_UART_BITS, UART_PARITY_NONE, DEFAULT_UART_STOP,
+    {{&machine_uart_type}, uart1, 1, 0, DEFAULT_UART_BITS, false, UART_PARITY_NONE, DEFAULT_UART_STOP,
      MICROPY_HW_UART1_TX, MICROPY_HW_UART1_RX, MICROPY_HW_UART1_CTS, MICROPY_HW_UART1_RTS,
      0, 0, 0, 0, {NULL, 1, 0, 0}, &read_mutex_1, {NULL, 1, 0, 0}, &write_mutex_1},
 };
