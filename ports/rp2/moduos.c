@@ -25,6 +25,15 @@
  */
 
 #include "py/runtime.h"
+#include "machine_uart.h"
+#include "rp2_usb.h"
+
+extern const mp_obj_type_t machine_uart_type;
+extern const mp_obj_type_t rp2_usb_vcp_type; 
+
+extern void uart_attach_to_repl(machine_uart_obj_t *self, bool attached);
+extern void usb_vcp_attach_to_repl(rp2_usb_vcp_obj_t *self, bool attached);
+
 
 uint8_t rosc_random_u8(size_t cycles);
 
@@ -38,3 +47,32 @@ STATIC mp_obj_t mp_uos_urandom(mp_obj_t num) {
     return mp_obj_new_bytes_from_vstr(&vstr);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(mp_uos_urandom_obj, mp_uos_urandom);
+
+bool mp_uos_dupterm_is_builtin_stream(mp_const_obj_t stream) {
+    const mp_obj_type_t *type = mp_obj_get_type(stream);
+    return type == &machine_uart_type
+           #if MICROPY_HW_ENABLE_USB
+           || type == &pyb_usb_vcp_type
+           #endif
+    ;
+}
+
+void mp_uos_dupterm_stream_detached_attached(mp_obj_t stream_detached, mp_obj_t stream_attached) {
+    if (mp_obj_get_type(stream_detached) == &machine_uart_type) {
+        uart_attach_to_repl(MP_OBJ_TO_PTR(stream_detached), false);
+    }
+    #if MICROPY_HW_ENABLE_USBDEV
+    if (mp_obj_get_type(stream_detached) == &rp2_usb_vcp_type) {
+        usb_vcp_attach_to_repl(MP_OBJ_TO_PTR(stream_detached), false);
+    }
+    #endif
+
+    if (mp_obj_get_type(stream_attached) == &machine_uart_type) {
+        uart_attach_to_repl(MP_OBJ_TO_PTR(stream_attached), true);
+    }
+    #if MICROPY_HW_ENABLE_USBDEV
+    if (mp_obj_get_type(stream_attached) == &rp2_usb_vcp_type) {
+        usb_vcp_attach_to_repl(MP_OBJ_TO_PTR(stream_attached), true);
+    }
+    #endif
+}

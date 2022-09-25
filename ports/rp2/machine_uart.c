@@ -35,6 +35,7 @@
 #include "hardware/uart.h"
 #include "hardware/regs/uart.h"
 #include "pico/mutex.h"
+#include "machine_uart.h"
 
 #define DEFAULT_UART_BAUDRATE (115200)
 #define DEFAULT_UART_BITS (8)
@@ -83,27 +84,7 @@ auto_init_mutex(write_mutex_1);
 auto_init_mutex(read_mutex_0);
 auto_init_mutex(read_mutex_1);
 
-typedef struct _machine_uart_obj_t {
-    mp_obj_base_t base;
-    uart_inst_t *const uart;
-    uint8_t uart_id;
-    uint32_t baudrate;
-    uint8_t bits;
-    uart_parity_t parity;
-    uint8_t stop;
-    uint8_t tx;
-    uint8_t rx;
-    uint8_t cts;
-    uint8_t rts;
-    uint16_t timeout;       // timeout waiting for first char (in ms)
-    uint16_t timeout_char;  // timeout waiting between chars (in ms)
-    uint8_t invert;
-    uint8_t flow;
-    ringbuf_t read_buffer;
-    mutex_t *read_mutex;
-    ringbuf_t write_buffer;
-    mutex_t *write_mutex;
-} machine_uart_obj_t;
+
 
 STATIC machine_uart_obj_t machine_uart_obj[] = {
     {{&machine_uart_type}, uart0, 0, 0, DEFAULT_UART_BITS, UART_PARITY_NONE, DEFAULT_UART_STOP,
@@ -417,6 +398,10 @@ STATIC mp_obj_t machine_uart_deinit(mp_obj_t self_in) {
     return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(machine_uart_deinit_obj, machine_uart_deinit);
+
+void uart_attach_to_repl(machine_uart_obj_t *self, bool attached) {
+    self->attached_to_repl = attached;
+}
 
 STATIC mp_obj_t machine_uart_any(mp_obj_t self_in) {
     machine_uart_obj_t *self = MP_OBJ_TO_PTR(self_in);

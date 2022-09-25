@@ -26,13 +26,8 @@
 
 #include "tusb.h"
 #include "pico/unique_id.h"
+#include "tusb_config.h"
 
-#ifndef MICROPY_HW_USB_VID
-#define MICROPY_HW_USB_VID (0x2E8A) // Raspberry Pi
-#endif
-#ifndef MICROPY_HW_USB_PID
-#define MICROPY_HW_USB_PID (0x0005) // RP2 MicroPython
-#endif
 
 #if CFG_TUD_MSC
 #define USBD_DESC_LEN (TUD_CONFIG_DESC_LEN + MICROPY_HW_USB_CDC_NUM * TUD_CDC_DESC_LEN + TUD_MSC_DESC_LEN)

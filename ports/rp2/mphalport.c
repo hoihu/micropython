@@ -39,11 +39,9 @@
 #include "lib/cyw43-driver/src/cyw43.h"
 #endif
 
-#if MICROPY_HW_ENABLE_UART_REPL || MICROPY_HW_ENABLE_USBDEV
+extern void poll_cdc_interfaces(void);
 
-#ifndef MICROPY_HW_STDIN_BUFFER_LEN
-#define MICROPY_HW_STDIN_BUFFER_LEN 512
-#endif
+#if MICROPY_HW_ENABLE_UART_REPL || MICROPY_HW_ENABLE_USBDEV
 
 STATIC uint8_t stdin_ringbuf_array[MICROPY_HW_STDIN_BUFFER_LEN];
 ringbuf_t stdin_ringbuf = { stdin_ringbuf_array, sizeof(stdin_ringbuf_array) };
@@ -52,40 +50,6 @@ ringbuf_t stdin_ringbuf = { stdin_ringbuf_array, sizeof(stdin_ringbuf_array) };
 
 #if MICROPY_HW_ENABLE_USBDEV
 
-uint8_t cdc_itf_pending; // keep track of cdc interfaces which need attention to poll
-
-void poll_cdc_interfaces(void) {
-    // any CDC interfaces left to poll?
-    if (cdc_itf_pending && ringbuf_free(&stdin_ringbuf)) {
-        for (uint8_t itf = 0; itf < 8; ++itf) {
-            if (cdc_itf_pending & (1 << itf)) {
-                tud_cdc_rx_cb(itf);
-                if (!cdc_itf_pending) {
-                    break;
-                }
-            }
-        }
-    }
-}
-
-void tud_cdc_rx_cb(uint8_t itf) {
-    // consume pending USB data immediately to free usb buffer and keep the endpoint from stalling.
-    // in case the ringbuffer is full, mark the CDC interface that need attention later on for polling
-    cdc_itf_pending &= ~(1 << itf);
-    for (uint32_t bytes_avail = tud_cdc_n_available(itf); bytes_avail > 0; --bytes_avail) {
-        if (ringbuf_free(&stdin_ringbuf)) {
-            int data_char = tud_cdc_read_char();
-            if (data_char == mp_interrupt_char) {
-                mp_sched_keyboard_interrupt();
-            } else {
-                ringbuf_put(&stdin_ringbuf, data_char);
-            }
-        } else {
-            cdc_itf_pending |= (1 << itf);
-            return;
-        }
-    }
-}
 
 #endif
 

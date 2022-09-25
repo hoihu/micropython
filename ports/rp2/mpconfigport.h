@@ -147,6 +147,9 @@
 #define MICROPY_PY_OS_DUPTERM           (1)
 #endif
 #endif
+#define MICROPY_PY_OS_DUPTERM       (3)
+#define MICROPY_PY_UOS_DUPTERM_BUILTIN_STREAM (1)
+#define MICROPY_PY_UOS_DUPTERM_STREAM_DETACHED_ATTACHED (1)
 
 #if MICROPY_PY_NETWORK_CYW43
 extern const struct _mp_obj_type_t mp_network_cyw43_type;

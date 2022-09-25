@@ -125,6 +125,8 @@ set(MICROPY_SOURCE_PORT
     pendsv.c
     rp2_flash.c
     rp2_pio.c
+    rp2_usb.c
+    usb.c
     tusb_port.c
     uart.c
     msc_disk.c
@@ -151,6 +153,8 @@ set(MICROPY_SOURCE_QSTR
     ${PROJECT_SOURCE_DIR}/modutime.c
     ${PROJECT_SOURCE_DIR}/rp2_flash.c
     ${PROJECT_SOURCE_DIR}/rp2_pio.c
+    ${PROJECT_SOURCE_DIR}/rp2_usb.c
+    ${PROJECT_SOURCE_DIR}/usb.c
 )
 
 set(PICO_SDK_COMPONENTS
