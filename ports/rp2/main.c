@@ -41,6 +41,7 @@
 #include "uart.h"
 #include "modmachine.h"
 #include "modrp2.h"
+#include "rp2_usb.h"
 #include "mpbthciport.h"
 #include "genhdr/mpversion.h"
 
@@ -86,7 +87,8 @@ int main(int argc, char **argv) {
 
     #if MICROPY_HW_ENABLE_USBDEV
     bi_decl(bi_program_feature("USB REPL"))
-    tusb_init();
+    tusb_init();    
+    rp2_usb_init0();
     #endif
 
     #if MICROPY_PY_THREAD

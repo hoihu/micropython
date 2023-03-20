@@ -36,10 +36,13 @@
 
 #if MICROPY_HW_ENABLE_USBDEV
 
+// imports from tinyusb... was not able to import them directly..
+// -------
 extern uint32_t tud_cdc_n_available       (uint8_t itf);
 extern void tud_cdc_rx_cb(uint8_t itf);
 extern int32_t  tud_cdc_n_read_char       (uint8_t itf);
-uint32_t tud_cdc_n_read            (uint8_t itf, void* buffer, uint32_t bufsize);
+extern uint32_t tud_cdc_n_read            (uint8_t itf, void* buffer, uint32_t bufsize);
+// -------
 
 STATIC uint8_t cdc_1_array[MICROPY_HW_STDIN_BUFFER_LEN];
 #if MICROPY_HW_USB_CDC_NUM >= 2
@@ -81,7 +84,7 @@ void tud_cdc_rx_cb(uint8_t itf) {
     // consume pending USB data immediately to free usb buffer and keep the endpoint from stalling.
     // in case the ringbuffer is full, mark the CDC interface that need attention later on for polling
     // TODO Check itf number first
-    ringbuf_t cdc_ringbuf = cdc_ringbuffers[itf-1];
+    ringbuf_t cdc_ringbuf = cdc_ringbuffers[itf];
     cdc_itf_pending &= ~(1 << itf);
     for (int bytes_avail = tud_cdc_n_available(itf); bytes_avail > 0; --bytes_avail) {
         if (ringbuf_free(&cdc_ringbuf)) {

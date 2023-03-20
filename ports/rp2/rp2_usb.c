@@ -44,8 +44,12 @@ extern uint32_t tud_cdc_n_read            (uint8_t itf, void* buffer, uint32_t b
 extern uint32_t tud_cdc_n_write           (uint8_t itf, void const* buffer, uint32_t bufsize);
 extern uint32_t tud_cdc_n_write_available (uint8_t itf);
 extern uint32_t tud_cdc_n_write_available (uint8_t itf);
+extern uint32_t tud_cdc_n_write_flush     (uint8_t itf);
+
 
 mp_uint_t rp2_usb_flags = 0;
+
+void rp2_usb_vcp_init0(void);
 
 // from bufhelper.c/h
 // --------------------
@@ -151,7 +155,7 @@ void usb_vcp_attach_to_repl(rp2_usb_vcp_obj_t *self, bool attached) {
  /// the connected host.
 const mp_obj_type_t rp2_usb_vcp_type;
 
-const rp2_usb_vcp_obj_t rp2_usb_vcp_obj[MICROPY_HW_USB_CDC_NUM] = {
+const rp2_usb_vcp_obj_t rp2_usb_vcp_objs[MICROPY_HW_USB_CDC_NUM] = {
     {.base = {&rp2_usb_vcp_type}, .cdc_itf_nr=1, .attached_to_repl=1},
     #if MICROPY_HW_USB_CDC_NUM >= 2
     {.base = {&rp2_usb_vcp_type}, .cdc_itf_nr=2, .attached_to_repl=0},
@@ -161,15 +165,26 @@ const rp2_usb_vcp_obj_t rp2_usb_vcp_obj[MICROPY_HW_USB_CDC_NUM] = {
     #endif
 };
 
+void rp2_usb_init0(void) {
+    //for (int i = 0; i < MICROPY_HW_USB_CDC_NUM; ++i) {
+    //    rp2_usb_vcp_objs[i].attached_to_repl = 0;
+    //}
+    //#if MICROPY_HW_USB_HID
+    //MP_STATE_PORT(pyb_hid_report_desc) = MP_OBJ_NULL;
+    //#endif
 
-//STATIC void rp2_usb_vcp_init0(void) {
-//    // Activate USB_VCP(0) on dupterm slot 1 for the REPL
-//    MP_STATE_VM(dupterm_objs[1]) = MP_OBJ_FROM_PTR(&rp2_usb_vcp_obj[0]);
-//}
+    rp2_usb_vcp_init0();
+}
+
+void rp2_usb_vcp_init0(void) {
+    // Activate USB_VCP(0) on dupterm slot 1 for the REPL
+    //MP_STATE_VM(dupterm_objs[1]) = MP_OBJ_FROM_PTR(&rp2_usb_vcp_objs[0]);
+    //usb_vcp_attach_to_repl(&rp2_usb_vcp_objs[0], true);
+}
 
 STATIC void rp2_usb_vcp_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
-    // int id = ((pyb_usb_vcp_obj_t *)MP_OBJ_TO_PTR(self_in))->cdc_itf->cdc_idx;
-    mp_printf(print, "USB_VCP");
+    int id = ((rp2_usb_vcp_obj_t *)MP_OBJ_TO_PTR(self_in))->cdc_itf_nr;
+    mp_printf(print, "USB_VCP(%u)", id);
 }
 
 
@@ -182,7 +197,7 @@ STATIC void rp2_usb_vcp_print(const mp_print_t *print, mp_obj_t self_in, mp_prin
      // TODO raise exception if USB is not configured for VCP
      int id = (n_args == 0) ? 0 : mp_obj_get_int(args[0]);
      if (0 <= id && id < MICROPY_HW_USB_CDC_NUM) {
-         return MP_OBJ_FROM_PTR(&rp2_usb_vcp_obj[id]);
+         return MP_OBJ_FROM_PTR(&rp2_usb_vcp_objs[id]);
      } else {
          mp_raise_ValueError(NULL);
      }
@@ -347,7 +362,7 @@ STATIC mp_uint_t rp2_usb_vcp_read(mp_obj_t self_in, void *buf, mp_uint_t size, i
  STATIC mp_uint_t rp2_usb_vcp_write(mp_obj_t self_in, const void *buf, mp_uint_t size, int *errcode) {
      rp2_usb_vcp_obj_t *self = MP_OBJ_TO_PTR(self_in);
      int ret = tud_cdc_n_write(self->cdc_itf_nr, (const byte *)buf, size);
-     // tud_cdc_write_flush();
+     tud_cdc_n_write_flush(self->cdc_itf_nr);
      if (ret == 0) {
          // return EAGAIN error to indicate non-blocking
          *errcode = MP_EAGAIN;
@@ -365,7 +380,7 @@ STATIC mp_uint_t rp2_usb_vcp_read(mp_obj_t self_in, void *buf, mp_uint_t size, i
          if ((flags & MP_STREAM_POLL_RD) && tud_cdc_n_available(self->cdc_itf_nr) > 0) {
              ret |= MP_STREAM_POLL_RD;
          }
-         if ((flags & MP_STREAM_POLL_WR) && tud_cdc_n_write_available(self->cdc_itf_nr)) {
+         if ((flags & MP_STREAM_POLL_WR) && tud_cdc_n_write_available(self->cdc_itf_nr) > 32) {
              ret |= MP_STREAM_POLL_WR;
          }
      } else {

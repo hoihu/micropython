@@ -33,6 +33,7 @@ typedef struct _rp2_usb_vcp_obj_t {
 } rp2_usb_vcp_obj_t;
 
 void usb_vcp_attach_to_repl(rp2_usb_vcp_obj_t *self, bool attached);
+void rp2_usb_init0(void);
 
 extern const mp_obj_type_t rp2_usb_vcp_type; 
 extern mp_uint_t rp2_usb_flags;
