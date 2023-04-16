@@ -46,7 +46,7 @@
 #define CFG_TUSB_RHPORT0_MODE   (OPT_MODE_DEVICE)
 
 #if MICROPY_HW_USB_CDC
-#define CFG_TUD_CDC             (1)
+#define CFG_TUD_CDC             (MICROPY_HW_USB_CDC_NUM)
 #else
 #define CFG_TUD_CDC             (0)
 #endif
@@ -76,7 +76,7 @@
 // Define static descriptor size and interface count based on the above config
 
 #define USBD_STATIC_DESC_LEN (TUD_CONFIG_DESC_LEN +                     \
-    (CFG_TUD_CDC ? (TUD_CDC_DESC_LEN) : 0) +  \
+    (CFG_TUD_CDC ? (CFG_TUD_CDC * TUD_CDC_DESC_LEN) : 0) +  \
     (CFG_TUD_MSC ? (TUD_MSC_DESC_LEN) : 0)    \
     )
 
@@ -85,7 +85,9 @@
 #define USBD_STR_PRODUCT (0x02)
 #define USBD_STR_SERIAL (0x03)
 #define USBD_STR_CDC (0x04)
-#define USBD_STR_MSC (0x05)
+#define USBD_STR_CDC2 (0x05)
+#define USBD_STR_CDC3 (0x06)
+#define USBD_STR_MSC (0x04 + CFG_TUD_CDC)
 
 #define USBD_MAX_POWER_MA (250)
 
@@ -93,21 +95,57 @@
 #define MICROPY_HW_USB_DESC_STR_MAX (20)
 #endif
 
+enum {
+    USBD_ITF_CDC = 0,
+    #if CFG_TUD_CDC
+    USBD_ITF_CDC_DATA,
+    #if CFG_TUD_CDC >= 2
+    USBD_ITF_CDC2,
+    USBD_ITF_CDC2_DATA,
+    #endif
+    #if CFG_TUD_CDC >= 3
+    USBD_ITF_CDC3,
+    USBD_ITF_CDC3_DATA,
+    #endif
+    #endif // CFG_TUD_CDC
+    #if CFG_TUD_MSC
+    USBD_ITF_MSC
+    #endif
+    USBD_ITF_MAX
+};
+
 #if CFG_TUD_CDC
-#define USBD_ITF_CDC (0) // needs 2 interfaces
 #define USBD_CDC_EP_CMD (0x81)
 #define USBD_CDC_EP_OUT (0x02)
-#define USBD_CDC_EP_IN (0x82)
+#define USBD_CDC_EP_IN  (0x82)
+#if MICROPY_HW_USB_CDC_NUM >= 2
+#define USBD_CDC2_EP_CMD (0x83)
+#define USBD_CDC2_EP_OUT (0x04)
+#define USBD_CDC2_EP_IN  (0x84)
+#endif 
+#if MICROPY_HW_USB_CDC_NUM >= 3
+#define USBD_CDC3_EP_CMD (0x85)
+#define USBD_CDC3_EP_OUT (0x06)
+#define USBD_CDC3_EP_IN  (0x86)
+#endif
 #endif // CFG_TUD_CDC
 
 #if CFG_TUD_MSC
 // Interface & Endpoint numbers for MSC come after CDC, if it is enabled
 #if CFG_TUD_CDC
-#define USBD_ITF_MSC (2)
+#if CFG_TUD_CDC == 1
 #define EPNUM_MSC_OUT (0x03)
 #define EPNUM_MSC_IN (0x83)
+#endif
+#if CFG_TUD_CDC == 2
+#define EPNUM_MSC_OUT (0x05)
+#define EPNUM_MSC_IN (0x85)
+#endif
+#if CFG_TUD_CDC == 3
+#define EPNUM_MSC_OUT (0x07)
+#define EPNUM_MSC_IN (0x87)
+#endif
 #else
-#define USBD_ITF_MSC (0)
 #define EPNUM_MSC_OUT (0x01)
 #define EPNUM_MSC_IN (0x81)
 #endif // CFG_TUD_CDC
@@ -119,9 +157,9 @@
 #define USBD_STR_STATIC_MAX (USBD_STR_MSC + 1)
 #define USBD_EP_STATIC_MAX (EPNUM_MSC_OUT + 1)
 #elif CFG_TUD_CDC
-#define USBD_ITF_STATIC_MAX (USBD_ITF_CDC + 2)
-#define USBD_STR_STATIC_MAX (USBD_STR_CDC + 1)
-#define USBD_EP_STATIC_MAX (((EPNUM_CDC_EP_IN)&~TUSB_DIR_IN_MASK) + 1)
+#define USBD_ITF_STATIC_MAX (USBD_ITF_CDC + CFG_TUD_CDC + 2)
+#define USBD_STR_STATIC_MAX (USBD_STR_CDC + CFG_TUD_CDC + 1)
+#define USBD_EP_STATIC_MAX (((EPNUM_CDC_EP_IN)&~TUSB_DIR_IN_MASK) + CFG_TUD_CDC * 2 + 1)
 #else // !CFG_TUD_MSC && !CFG_TUD_CDC
 #define USBD_ITF_STATIC_MAX (0)
 #define USBD_STR_STATIC_MAX (0)

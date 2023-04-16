@@ -61,8 +61,17 @@ const uint8_t mp_usbd_desc_cfg_static[USBD_STATIC_DESC_LEN] = {
     TUD_CDC_DESCRIPTOR(USBD_ITF_CDC, USBD_STR_CDC, USBD_CDC_EP_CMD,
         USBD_CDC_CMD_MAX_SIZE, USBD_CDC_EP_OUT, USBD_CDC_EP_IN, USBD_CDC_IN_OUT_MAX_SIZE),
     #endif
+    #if MICROPY_HW_USB_CDC_NUM >= 2
+    TUD_CDC_DESCRIPTOR(USBD_ITF_CDC2, USBD_STR_CDC2, USBD_CDC2_EP_CMD,
+        USBD_CDC_CMD_MAX_SIZE, USBD_CDC2_EP_OUT, USBD_CDC2_EP_IN, USBD_CDC_IN_OUT_MAX_SIZE),
+    #endif
+    #if MICROPY_HW_USB_CDC_NUM >= 3
+    TUD_CDC_DESCRIPTOR(USBD_ITF_CDC3, USBD_STR_CDC3, USBD_CDC3_EP_CMD,
+        USBD_CDC_CMD_MAX_SIZE, USBD_CDC3_EP_OUT, USBD_CDC3_EP_IN, USBD_CDC_IN_OUT_MAX_SIZE),
+    #endif
+
     #if CFG_TUD_MSC
-    TUD_MSC_DESCRIPTOR(USBD_ITF_MSC, 5, EPNUM_MSC_OUT, EPNUM_MSC_IN, 64),
+    TUD_MSC_DESCRIPTOR(USBD_ITF_MSC, USBD_STR_MSC, EPNUM_MSC_OUT, EPNUM_MSC_IN, 64),
     #endif
 };
 
@@ -92,6 +101,12 @@ const uint16_t *tud_descriptor_string_cb(uint8_t index, uint16_t langid) {
         case USBD_STR_CDC:
             desc_str = MICROPY_HW_USB_CDC_INTERFACE_STRING;
             break;
+        case USBD_STR_CDC2:
+            desc_str = MICROPY_HW_USB_CDC_INTERFACE_STRING "2";
+            break;
+        case USBD_STR_CDC3:
+            desc_str = MICROPY_HW_USB_CDC_INTERFACE_STRING "3";
+            break;    
         #endif
         #if CFG_TUD_MSC
         case USBD_STR_MSC:

@@ -237,6 +237,7 @@ extern void mp_thread_end_atomic_section(uint32_t);
 #define MICROPY_PY_LWIP_EXIT    lwip_lock_release();
 
 #if MICROPY_HW_ENABLE_USBDEV
+#define MICROPY_HW_USB_CDC_NUM  (1)
 #define MICROPY_HW_USBDEV_TASK_HOOK extern void usbd_task(void); usbd_task();
 #define MICROPY_VM_HOOK_COUNT (10)
 #define MICROPY_VM_HOOK_INIT static uint vm_hook_divisor = MICROPY_VM_HOOK_COUNT;
