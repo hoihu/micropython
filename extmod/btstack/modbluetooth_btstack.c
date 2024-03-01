@@ -35,7 +35,7 @@
 
 #include "lib/btstack/src/btstack.h"
 
-#define DEBUG_printf(...) // printf("btstack: " __VA_ARGS__)
+#define DEBUG_printf(...) mp_printf(&mp_plat_print, __VA_ARGS__)
 
 #ifndef MICROPY_PY_BLUETOOTH_DEFAULT_GAP_NAME
 #define MICROPY_PY_BLUETOOTH_DEFAULT_GAP_NAME "MPY BTSTACK"
